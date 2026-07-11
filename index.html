@@ -85,7 +85,7 @@
         #in-app-notification.show { top: 20px; }
 
         /* Chat Screen */
-        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: var(--chat-bg); background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; }
+        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: var(--chat-bg); background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; overflow-x: hidden; }
         
         .message { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 15px; position: relative; word-wrap: break-word; box-shadow: 0 1px 1px var(--shadow); cursor: pointer; user-select: none; color: var(--text-main); }
         .message.sent { background: var(--msg-sent); align-self: flex-end; border-top-right-radius: 0; }
@@ -132,11 +132,18 @@
         /* Call UI */
         #call-screen-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 999; flex-direction: column; justify-content: center; align-items: center; color: white; }
         .call-dp { width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 20px; object-fit: cover; }
-        .call-btns { display: flex; gap: 20px; margin-top: 40px; }
+        .call-btns { display: flex; gap: 15px; margin-top: 40px; flex-wrap: wrap; justify-content: center; }
         .call-btn { width: 65px; height: 65px; border-radius: 50%; font-size: 26px; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; color: white; }
         .btn-accept { background: #34C759; }
         .btn-end { background: var(--danger); }
         
+        #local-video {
+            position: absolute; width: 110px; height: 160px; bottom: 130px; right: 20px; 
+            border-radius: 12px; border: 2px solid white; object-fit: cover; display: none; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 5; cursor: grab;
+        }
+        #local-video:active { cursor: grabbing; }
+
         .material-icons-round { font-size: 24px; }
         
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
@@ -174,7 +181,7 @@
     <!-- Call Screen -->
     <div id="call-screen-overlay">
         <video id="remote-video" autoplay playsinline style="position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 1; display: none;"></video>
-        <video id="local-video" autoplay playsinline muted style="position: absolute; width: 110px; height: 160px; bottom: 130px; right: 20px; border-radius: 12px; border: 2px solid white; object-fit: cover; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 5;"></video>
+        <video id="local-video" autoplay playsinline muted></video>
         
         <div id="call-ui-elements" style="display: flex; flex-direction: column; align-items: center; z-index: 10;">
             <img id="call-user-dp" class="call-dp" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
@@ -185,6 +192,7 @@
         
         <div class="call-btns" style="z-index: 10;">
             <button id="btn-switch-camera" class="call-btn" style="background: rgba(255,255,255,0.2); display:none;"><span class="material-icons-round">flip_camera_ios</span></button>
+            <button id="btn-mute-video" class="call-btn" style="background: rgba(255,255,255,0.2); display:none;"><span class="material-icons-round">videocam</span></button>
             <button id="btn-mute-call" class="call-btn" style="background: rgba(255,255,255,0.2); display:none;"><span class="material-icons-round">mic</span></button>
             <button id="btn-accept-call" class="call-btn btn-accept"><span class="material-icons-round">call</span></button>
             <button id="btn-end-call" class="call-btn btn-end"><span class="material-icons-round">call_end</span></button>
@@ -216,7 +224,7 @@
         </div>
         <div id="chats-list" class="list-container"></div>
         <div id="status-list" class="list-container" style="display:none; padding:20px; text-align:center;">Status coming soon.</div>
-        <div id="calls-list" class="list-container" style="display:none; padding:20px; text-align:center;">Call history coming soon.</div>
+        <div id="calls-list" class="list-container" style="display:none; padding:20px;"></div>
     </div>
 
     <!-- Chat Screen -->
@@ -282,16 +290,26 @@
     <!-- Profile Settings -->
     <div id="user-settings-modal" class="modal"> 
         <div class="modal-content"> 
-            <h3>Profile</h3> 
+            <h3>Profile & Settings</h3> 
             <div style="margin: 15px 0;"> 
                 <img id="my-settings-dp" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 3px solid var(--primary);"> 
                 <input type="file" id="my-dp-upload" accept="image/*" style="display:none;"> 
             </div> 
             <input type="text" id="my-display-name" class="input-field" placeholder="Display Name"> 
             <input type="text" id="my-bio" class="input-field" placeholder="About (Bio)" style="font-size: 14px;">
-            <label style="display: flex; align-items: center; margin: 15px 0; cursor: pointer; font-size:14px;"> 
-                <input type="checkbox" id="global-notifications" style="width: 20px; height: 20px; margin-right: 10px;" checked> Enable Push Notifications 
-            </label> 
+            
+            <div style="text-align: left; margin-top: 15px; padding: 10px; background: var(--bg-color); border-radius: 8px;">
+                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; font-size:14px;"> 
+                    <input type="checkbox" id="global-notifications" style="width: 18px; height: 18px; margin-right: 10px;" checked> Push Notifications 
+                </label> 
+                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; font-size:14px;"> 
+                    <input type="checkbox" id="setting-read-receipts" style="width: 18px; height: 18px; margin-right: 10px;" checked> Read Receipts (Blue Ticks)
+                </label> 
+                <label style="display: flex; align-items: center; cursor: pointer; font-size:14px;"> 
+                    <input type="checkbox" id="setting-show-online" style="width: 18px; height: 18px; margin-right: 10px;" checked> Show Online Status
+                </label> 
+            </div>
+
             <button id="save-settings-btn" class="btn-primary">Save Profile</button> 
             <button onclick="closeModal('user-settings-modal')" class="modal-btn">Cancel</button> 
         </div> 
@@ -349,7 +367,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let currentUser = ""; let myProfile = { dp: "", name: "", bio: "Hey there! I am using WhatsApp.", globalNotif: true };
+    let currentUser = ""; let myProfile = { dp: "", name: "", bio: "Hey there! I am using WhatsApp.", globalNotif: true, readReceipts: true, showOnline: true };
     let currentRoomId = ""; let isGroupChat = false; let isBroadcastList = false; let chatType = "1to1"; 
     let loginTime = Date.now(); let notifiedMsgs = new Set(); let myChatMutes = {}; let myChatSettings = {}; 
     let isRecipientOnline = false;
@@ -359,9 +377,9 @@
 
     const SYSTEM_PASSWORD = "03009";
 
-    let pc; let localStream; let callRoomId; let isMuted = false;
+    let pc; let localStream; let callRoomId; let isMuted = false; let isVideoMuted = false;
     let callTimerInterval = null; let callSeconds = 0; let callUnsubscribers = [];
-    let isVideoCall = false; let currentFacingMode = "user"; 
+    let isVideoCall = false; let currentFacingMode = "user"; let callDirection = "";
     const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
     const ringtone = document.getElementById("ringtone-audio");
@@ -453,6 +471,8 @@
             if(s.exists()){ 
                 myProfile.dp = s.val().dp || ""; myProfile.name = s.val().displayName || u; myProfile.bio = s.val().bio || "Available";
                 myProfile.globalNotif = s.val().globalNotifications !== false; 
+                myProfile.readReceipts = s.val().readReceipts !== false;
+                myProfile.showOnline = s.val().showOnline !== false;
             } 
         }); 
         
@@ -467,8 +487,31 @@
             } else myChatSettings = {};
         }); 
         
-        onValue(dbRef(db, '.info/connected'), (s) => { if (s.val() === true) { update(dbRef(db, `Users/${u}`), { online: true }); onDisconnect(dbRef(db, `Users/${u}`)).update({ online: false, lastSeen: serverTimestamp() }); }}); 
-        setupGlobalCallListener(); showScreen("dashboard-screen"); loadChatList(); 
+        onValue(dbRef(db, '.info/connected'), (s) => { 
+            if (s.val() === true) { 
+                if(myProfile.showOnline) update(dbRef(db, `Users/${u}`), { online: true }); 
+                else update(dbRef(db, `Users/${u}`), { online: false }); 
+                onDisconnect(dbRef(db, `Users/${u}`)).update({ online: false, lastSeen: serverTimestamp() }); 
+            }
+        }); 
+        
+        setupGlobalCallListener(); showScreen("dashboard-screen"); loadChatList(); loadCallHistory();
+    }
+
+    function loadCallHistory() {
+        onValue(dbRef(db, `Users/${currentUser}/callHistory`), snap => {
+            const list = document.getElementById("calls-list");
+            list.innerHTML = "";
+            if(!snap.exists()) { list.innerHTML = "<div style='padding:20px;text-align:center;'>No call history</div>"; return; }
+            let calls = []; snap.forEach(c => calls.push(c.val()));
+            calls.reverse().forEach(c => {
+                let icon = c.direction === 'outgoing' ? 'call_made' : (c.status === 'missed' ? 'call_missed' : 'call_received');
+                let color = c.status === 'missed' ? 'var(--danger)' : (c.direction === 'outgoing' ? 'var(--secondary)' : 'var(--primary)');
+                let vIcon = c.isVideoCall ? 'videocam' : 'call';
+                let durStr = c.duration > 0 ? `(${Math.floor(c.duration/60)}:${String(c.duration%60).padStart(2,'0')})` : '(Missed)';
+                list.insertAdjacentHTML('beforeend', `<div class="list-item"><img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="item-dp"><div class="item-info"><div class="item-name">${c.peerName}</div><div class="item-sub" style="display:flex;align-items:center;gap:4px;"><span class="material-icons-round" style="font-size:14px;color:${color}">${icon}</span> ${formatTime12H(c.timestamp)} ${durStr}</div></div><span class="material-icons-round" style="color:var(--primary);">${vIcon}</span></div>`);
+            });
+        });
     }
 
     // Profile Settings Image Compress
@@ -497,6 +540,8 @@
         document.getElementById("my-display-name").value = myProfile.name; 
         document.getElementById("my-bio").value = myProfile.bio;
         document.getElementById("global-notifications").checked = myProfile.globalNotif;
+        document.getElementById("setting-read-receipts").checked = myProfile.readReceipts;
+        document.getElementById("setting-show-online").checked = myProfile.showOnline;
         document.getElementById("user-settings-modal").style.display = "flex"; 
     };
     document.getElementById("my-settings-dp").onclick = () => document.getElementById("my-dp-upload").click();
@@ -506,8 +551,22 @@
     document.getElementById("save-settings-btn").onclick = async () => { 
         let n = document.getElementById("my-display-name").value.trim(); 
         let b = document.getElementById("my-bio").value.trim();
-        await update(dbRef(db, `Users/${currentUser}`), { displayName: n, bio: b, dp: document.getElementById("my-settings-dp").src, globalNotifications: document.getElementById("global-notifications").checked }); 
-        alert("Profile Updated!"); closeModal("user-settings-modal"); 
+        let showOn = document.getElementById("setting-show-online").checked;
+        
+        await update(dbRef(db, `Users/${currentUser}`), { 
+            displayName: n, 
+            bio: b, 
+            dp: document.getElementById("my-settings-dp").src, 
+            globalNotifications: document.getElementById("global-notifications").checked,
+            readReceipts: document.getElementById("setting-read-receipts").checked,
+            showOnline: showOn
+        }); 
+        
+        // Instantly update live presence if changed
+        if(showOn) { update(dbRef(db, `Users/${currentUser}`), { online: true }); } 
+        else { update(dbRef(db, `Users/${currentUser}`), { online: false, lastSeen: serverTimestamp() }); }
+
+        alert("Profile & Settings Updated!"); closeModal("user-settings-modal"); 
     };
 
     document.getElementById("menu-add-contact").onclick = async () => { 
@@ -630,7 +689,13 @@
                 let d = s.val(); isRecipientOnline = d?.online || false; window.recipientLastSeenTime = d?.lastSeen || 0;
                 document.getElementById("chat-user-display").innerText = d?.displayName || id; 
                 document.getElementById("chat-header-dp").src = d?.dp || "https://cdn-icons-png.flaticon.com/512/149/149071.png"; 
-                document.getElementById("chat-status-display").innerText = d?.online ? "Online" : (d?.lastSeen ? "Last seen " + formatTime12H(d.lastSeen) : "Offline"); 
+                
+                let showStatus = d?.showOnline !== false; // if they have it enabled
+                if(showStatus) {
+                    document.getElementById("chat-status-display").innerText = d?.online ? "Online" : (d?.lastSeen ? "Last seen " + formatTime12H(d.lastSeen) : "Offline"); 
+                } else {
+                    document.getElementById("chat-status-display").innerText = "";
+                }
             }); 
         }
         showScreen("chat-screen");
@@ -777,10 +842,38 @@
                 let pressTimer;
                 const startPress = () => pressTimer = setTimeout(() => window.openMsgOptions(childNode.key, m, isMe), 500);
                 div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', () => clearTimeout(pressTimer)); div.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-                div.addEventListener('touchstart', startPress, {passive: true}); div.addEventListener('touchend', () => clearTimeout(pressTimer));
                 div.oncontextmenu = (e) => { e.preventDefault(); window.openMsgOptions(childNode.key, m, isMe); };
                 
-                let tick = isMe && chatType === '1to1' ? (m.read ? '<span style="color:#34B7F1;">✓✓</span>' : '<span>✓</span>') : '';
+                // Swipe to Reply Handling (Left to Right Only)
+                let startX = 0, startY = 0;
+                div.addEventListener('touchstart', e => { 
+                    startPress();
+                    startX = e.touches[0].clientX; startY = e.touches[0].clientY; 
+                    div.style.transition = 'none'; 
+                }, {passive: true});
+                div.addEventListener('touchmove', e => { 
+                    let dX = e.touches[0].clientX - startX; let dY = e.touches[0].clientY - startY; 
+                    if(dX > 0 && Math.abs(dX) > Math.abs(dY)) { 
+                        clearTimeout(pressTimer);
+                        if(e.cancelable) e.preventDefault(); 
+                        div.style.transform = `translateX(${Math.min(dX, 60)}px)`; 
+                    } 
+                }, {passive: false});
+                div.addEventListener('touchend', e => { 
+                    clearTimeout(pressTimer);
+                    div.style.transition = 'transform 0.2s'; div.style.transform = 'translateX(0)'; 
+                    let dX = e.changedTouches[0].clientX - startX; let dY = e.changedTouches[0].clientY - startY;
+                    if(dX > 50 && dX > Math.abs(dY)) { 
+                        replyingToMsg = { senderName: m.senderName, text: m.type === 'text' ? m.text : `📎 ${m.type}` };
+                        document.getElementById("reply-sender").innerText = replyingToMsg.senderName;
+                        document.getElementById("reply-text").innerText = replyingToMsg.text;
+                        document.getElementById("replying-to-container").style.display = "block";
+                        document.getElementById("msg-input").focus();
+                    } 
+                });
+                
+                // Read Receipts logic: Only show blue ticks if my user has Read Receipts enabled.
+                let tick = isMe && chatType === '1to1' ? (m.read && myProfile.readReceipts ? '<span style="color:#34B7F1;">✓✓</span>' : '<span>✓</span>') : '';
                 
                 if (m.deletedForEveryone) { 
                     div.innerHTML = `<span class="deleted-msg">🚫 This message was deleted</span> <span class="msg-time">${formatTime12H(m.timestamp)}</span>`; 
@@ -861,6 +954,20 @@
         }
     };
 
+    // Video Mute (Hide Screen)
+    document.getElementById("btn-mute-video").onclick = () => {
+        if(localStream && isVideoCall) {
+            let vTrack = localStream.getVideoTracks()[0];
+            if(vTrack) {
+                isVideoMuted = !isVideoMuted;
+                vTrack.enabled = !isVideoMuted;
+                let btn = document.getElementById("btn-mute-video");
+                btn.innerHTML = isVideoMuted ? '<span class="material-icons-round">videocam_off</span>' : '<span class="material-icons-round">videocam</span>';
+                btn.style.backgroundColor = isVideoMuted ? "var(--danger)" : "rgba(255,255,255,0.2)";
+            }
+        }
+    };
+
     // Camera Switch
     document.getElementById("btn-switch-camera").onclick = async () => {
         if (!isVideoCall || !localStream) return;
@@ -877,11 +984,46 @@
             
             localStream.addTrack(newVideoTrack);
             
+            // Reapply video mute state if they switch while hidden
+            newVideoTrack.enabled = !isVideoMuted;
+            
             const localVidEle = document.getElementById("local-video");
             localVidEle.srcObject = localStream;
             localVidEle.play().catch(e => console.error(e));
         } catch (err) { alert("Camera switch failed."); }
     };
+
+    // Make local video PIP draggable
+    const localVidEle = document.getElementById("local-video");
+    let isDraggingVid = false, dragStartX, dragStartY, initialVidX, initialVidY;
+    
+    function startVidDrag(clientX, clientY) {
+        isDraggingVid = true; 
+        dragStartX = clientX; 
+        dragStartY = clientY;
+        initialVidX = localVidEle.offsetLeft; 
+        initialVidY = localVidEle.offsetTop;
+        // Release bottom/right constraints so left/top take over seamlessly
+        localVidEle.style.right = 'auto'; 
+        localVidEle.style.bottom = 'auto';
+    }
+    
+    localVidEle.addEventListener('mousedown', (e) => startVidDrag(e.clientX, e.clientY));
+    document.addEventListener('mousemove', (e) => {
+        if(!isDraggingVid) return;
+        localVidEle.style.left = (initialVidX + (e.clientX - dragStartX)) + 'px';
+        localVidEle.style.top = (initialVidY + (e.clientY - dragStartY)) + 'px';
+    });
+    document.addEventListener('mouseup', () => isDraggingVid = false);
+    
+    localVidEle.addEventListener('touchstart', (e) => startVidDrag(e.touches[0].clientX, e.touches[0].clientY), {passive: true});
+    document.addEventListener('touchmove', (e) => {
+        if(!isDraggingVid) return;
+        localVidEle.style.left = (initialVidX + (e.touches[0].clientX - dragStartX)) + 'px';
+        localVidEle.style.top = (initialVidY + (e.touches[0].clientY - dragStartY)) + 'px';
+    }, {passive: true});
+    document.addEventListener('touchend', () => isDraggingVid = false);
+
 
     function startCallTimer() {
         callSeconds = 0; document.getElementById("call-status-text").style.display = "none";
@@ -893,7 +1035,7 @@
         onValue(dbRef(db, `Users/${currentUser}/incomingCall`), snap => {
             const data = snap.val();
             if(data && data.status === 'ringing') {
-                callRoomId = data.roomId; isVideoCall = data.isVideoCall === true;
+                callRoomId = data.roomId; isVideoCall = data.isVideoCall === true; callDirection = "incoming";
                 document.getElementById("call-user-name").innerText = data.callerName; document.getElementById("call-user-dp").src = data.callerDp || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
                 document.getElementById("call-status-text").innerText = isVideoCall ? "Incoming Video Call..." : "Incoming Audio Call..."; 
                 document.getElementById("btn-accept-call").style.display = "flex"; document.getElementById("call-screen-overlay").style.display = "flex";
@@ -905,7 +1047,7 @@
     async function startCall(videoEnabled) {
         try {
             callRoomId = currentRoomId; let calleeId = currentRoomId.split("_").find(id => id !== currentUser);
-            isVideoCall = videoEnabled; currentFacingMode = "user";
+            isVideoCall = videoEnabled; currentFacingMode = "user"; callDirection = "outgoing";
             
             document.getElementById("call-user-name").innerText = document.getElementById("chat-user-display").innerText; document.getElementById("call-user-dp").src = document.getElementById("chat-header-dp").src;
             document.getElementById("call-status-text").innerText = "Calling..."; document.getElementById("btn-accept-call").style.display = "none"; document.getElementById("call-screen-overlay").style.display = "flex";
@@ -914,11 +1056,16 @@
             isMuted = false;
             document.getElementById("btn-mute-call").innerHTML = '<span class="material-icons-round">mic</span>';
             document.getElementById("btn-mute-call").style.backgroundColor = "rgba(255,255,255,0.2)";
+            
+            isVideoMuted = false;
+            document.getElementById("btn-mute-video").innerHTML = '<span class="material-icons-round">videocam</span>';
+            document.getElementById("btn-mute-video").style.backgroundColor = "rgba(255,255,255,0.2)";
 
             localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: isVideoCall ? { facingMode: currentFacingMode } : false }); 
             if (isVideoCall) { 
                 let localVidEle = document.getElementById("local-video"); localVidEle.srcObject = localStream; localVidEle.style.display = "block"; 
                 document.getElementById("btn-switch-camera").style.display = "flex";
+                document.getElementById("btn-mute-video").style.display = "flex";
             }
             
             pc = new RTCPeerConnection(servers); localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
@@ -944,11 +1091,16 @@
             isMuted = false;
             document.getElementById("btn-mute-call").innerHTML = '<span class="material-icons-round">mic</span>';
             document.getElementById("btn-mute-call").style.backgroundColor = "rgba(255,255,255,0.2)";
+            
+            isVideoMuted = false;
+            document.getElementById("btn-mute-video").innerHTML = '<span class="material-icons-round">videocam</span>';
+            document.getElementById("btn-mute-video").style.backgroundColor = "rgba(255,255,255,0.2)";
 
             localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: isVideoCall ? { facingMode: currentFacingMode } : false }); 
             if (isVideoCall) { 
                 let localVidEle = document.getElementById("local-video"); localVidEle.srcObject = localStream; localVidEle.style.display = "block"; 
                 document.getElementById("btn-switch-camera").style.display = "flex";
+                document.getElementById("btn-mute-video").style.display = "flex";
             }
 
             pc = new RTCPeerConnection(servers); localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
@@ -969,7 +1121,18 @@
     }
 
     async function endCall() {
-        if(callRoomId) { await update(dbRef(db, `Calls/${callRoomId}`), { status: 'ended' }); let calleeId = callRoomId.split("_").find(id => id !== currentUser); if(calleeId) await remove(dbRef(db, `Users/${calleeId}/incomingCall`)); await remove(dbRef(db, `Users/${currentUser}/incomingCall`)); await remove(dbRef(db, `Calls/${callRoomId}`)); } 
+        if(callRoomId) { 
+            let calleeId = callRoomId.split("_").find(id => id !== currentUser); 
+            let peerName = document.getElementById("call-user-name").innerText || "Unknown";
+            if (callDirection) {
+                await push(dbRef(db, `Users/${currentUser}/callHistory`), { peerId: calleeId || "Unknown", peerName: peerName, direction: callDirection, status: callSeconds > 0 ? 'completed' : 'missed', duration: callSeconds, isVideoCall: isVideoCall, timestamp: serverTimestamp() });
+            }
+            
+            await update(dbRef(db, `Calls/${callRoomId}`), { status: 'ended' }); 
+            if(calleeId) await remove(dbRef(db, `Users/${calleeId}/incomingCall`)); 
+            await remove(dbRef(db, `Users/${currentUser}/incomingCall`)); 
+            await remove(dbRef(db, `Calls/${callRoomId}`)); 
+        } 
         resetCallUI();
     }
 
@@ -978,10 +1141,19 @@
         
         document.getElementById("btn-mute-call").style.display = "none";
         document.getElementById("btn-switch-camera").style.display = "none";
+        document.getElementById("btn-mute-video").style.display = "none";
         
         if(pc) { pc.close(); pc = null; } 
         if(localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; } 
-        document.getElementById("remote-audio").srcObject = null; document.getElementById("remote-video").srcObject = null; document.getElementById("remote-video").style.display = "none"; document.getElementById("local-video").srcObject = null; document.getElementById("local-video").style.display = "none"; document.getElementById("call-ui-elements").style.display = "flex"; document.getElementById("call-screen-overlay").style.display = "none"; callRoomId = null; 
+        document.getElementById("remote-audio").srcObject = null; document.getElementById("remote-video").srcObject = null; document.getElementById("remote-video").style.display = "none"; 
+        
+        let localVidEle = document.getElementById("local-video");
+        localVidEle.srcObject = null; localVidEle.style.display = "none"; 
+        // Reset PIP positional constraints
+        localVidEle.style.top = 'auto'; localVidEle.style.left = 'auto';
+        localVidEle.style.bottom = '130px'; localVidEle.style.right = '20px';
+
+        document.getElementById("call-ui-elements").style.display = "flex"; document.getElementById("call-screen-overlay").style.display = "none"; callRoomId = null; callDirection = "";
     }
 </script>
 </body>
