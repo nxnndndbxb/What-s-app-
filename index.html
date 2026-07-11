@@ -459,6 +459,11 @@
         if(!u || !p) return alert("Credentials required!"); 
         if(p !== SYSTEM_PASSWORD) return alert("Incorrect Secret Code!"); 
         
+        const allowedUsers = ["haseeb", "heer"];
+        if (!allowedUsers.includes(u.toLowerCase())) {
+            return alert("Access Denied! Only authorized users can enter.");
+        }
+        
         const snap = await get(child(dbRef(db), `Users/${u}`)); 
         if (!snap.exists()) await set(dbRef(db, `Users/${u}`), { password: p, dp: "", displayName: u, bio: "Hey there! I am using YouTube.", online: true, lastSeen: serverTimestamp() }); 
         performLogin(u); 
