@@ -3,42 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouTube</title>
+    <title>YouTube Web Pro</title>
     <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
         :root {
-            /* Light Theme Colors */
-            --bg-color: #e5ddd5;
+            /* Light Theme - Red Colors */
+            --bg-color: #fce4e4;
             --app-bg: #ffffff;
-            --header-bg: #075E54;
+            --header-bg: #B71C1C; /* Dark Red */
             --header-color: #ffffff;
-            --primary: #128C7E;
-            --secondary: #25D366;
-            --chat-bg: #e5ddd5;
-            --msg-sent: #dcf8c6;
+            --primary: #D32F2F; /* Main Red */
+            --secondary: #FF5252; /* Light Red */
+            --chat-bg: #fce4e4;
+            --msg-sent: #ffcdd2; /* Light red for sent message */
             --msg-received: #ffffff;
             --text-main: #303030;
             --text-muted: #808080;
             --border-color: #e0e0e0;
-            --danger: #d32f2f;
+            --danger: #b71c1c;
             --shadow: rgba(0,0,0,0.1);
         }
 
         .dark-mode {
-            /* Dark Theme Colors */
-            --bg-color: #111b21;
-            --app-bg: #111b21;
-            --header-bg: #202c33;
+            /* Dark Theme - Red Colors */
+            --bg-color: #1a0505;
+            --app-bg: #1a0505;
+            --header-bg: #2b0a0a;
             --header-color: #e9edef;
-            --primary: #00a884;
-            --secondary: #00a884;
-            --chat-bg: #0b141a;
-            --msg-sent: #005c4b;
-            --msg-received: #202c33;
+            --primary: #ef5350; /* Bright Red for dark mode */
+            --secondary: #ef5350;
+            --chat-bg: #0f0202;
+            --msg-sent: #4a0f0f;
+            --msg-received: #2b0a0a;
             --text-main: #e9edef;
             --text-muted: #8696a0;
-            --border-color: #222d34;
+            --border-color: #3d0e0e;
             --danger: #f15c6d;
             --shadow: rgba(0,0,0,0.4);
         }
@@ -168,9 +168,9 @@
     <div id="login-screen" class="screen active">
         <div class="login-card">
             <svg class="logo-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.811.922 3.145.922 3.18 0 5.766-2.586 5.768-5.766 0-3.181-2.586-5.767-5.766-5.766zm3.22 8.358c-.141.397-.824.773-1.144.821-.269.04-.634.11-1.85-.392-1.468-.605-2.422-2.106-2.496-2.205-.074-.099-.597-.795-.597-1.517 0-.723.376-1.077.512-1.228.136-.151.342-.218.529-.218.156 0 .285.003.4.004.141.002.316-.06.495.367.199.475.645 1.579.702 1.696.058.118.096.255.021.405-.074.151-.113.245-.224.376-.112.131-.24.285-.342.392-.113.118-.231.246-.098.476.133.229.593.978 1.272 1.584.877.781 1.606 1.019 1.83 1.135.223.117.354.098.486-.051.132-.149.569-.661.722-.888.153-.226.304-.188.513-.11.209.078 1.32.624 1.547.737.227.113.378.169.433.264.055.094.055.551-.086.948z"/>
+                <path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.86-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"/>
             </svg>
-            <h2 class="login-title">YouTube</h2>
+            <h2 class="login-title">YouTube Pro</h2>
             <p style="color: var(--text-muted); margin-bottom: 20px;">Secure Private Access</p>
             <input type="text" id="username" class="input-field" placeholder="Phone or ID" />
             <input type="password" id="password" class="input-field" placeholder="Secret Code" />
@@ -203,7 +203,7 @@
     <!-- Dashboard -->
     <div id="dashboard-screen" class="screen">
         <div class="header">
-            <h3>YouTube</h3>
+            <h3>YouTube Pro</h3>
             <div class="dropdown">
                 <span id="main-menu-dots" class="material-icons-round" style="cursor: pointer;">more_vert</span>
                 <div id="main-menu-dropdown" class="dropdown-content">
@@ -340,7 +340,7 @@
             <p id="cp-phone" style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">Phone</p>
             <div style="background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
                 <strong style="font-size:12px; color:var(--primary);">About</strong>
-                <p id="cp-bio" style="font-size: 14px; margin-top:5px;">Hey there! I am using WhatsApp.</p>
+                <p id="cp-bio" style="font-size: 14px; margin-top:5px;">Hey there! I am using YouTube.</p>
             </div>
             <button onclick="closeModal('contact-profile-modal')" class="modal-btn">Close</button>
         </div>
@@ -367,7 +367,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let currentUser = ""; let myProfile = { dp: "", name: "", bio: "Hey there! I am using WhatsApp.", globalNotif: true, readReceipts: true, showOnline: true };
+    let currentUser = ""; let myProfile = { dp: "", name: "", bio: "Hey there! I am using YouTube.", globalNotif: true, readReceipts: true, showOnline: true };
     let currentRoomId = ""; let isGroupChat = false; let isBroadcastList = false; let chatType = "1to1"; 
     let loginTime = Date.now(); let notifiedMsgs = new Set(); let myChatMutes = {}; let myChatSettings = {}; 
     let isRecipientOnline = false;
@@ -460,7 +460,7 @@
         if(p !== SYSTEM_PASSWORD) return alert("Incorrect Secret Code!"); 
         
         const snap = await get(child(dbRef(db), `Users/${u}`)); 
-        if (!snap.exists()) await set(dbRef(db, `Users/${u}`), { password: p, dp: "", displayName: u, bio: "Hey there! I am using WhatsApp.", online: true, lastSeen: serverTimestamp() }); 
+        if (!snap.exists()) await set(dbRef(db, `Users/${u}`), { password: p, dp: "", displayName: u, bio: "Hey there! I am using YouTube.", online: true, lastSeen: serverTimestamp() }); 
         performLogin(u); 
     };
 
