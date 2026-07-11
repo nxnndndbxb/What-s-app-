@@ -433,7 +433,7 @@
     let pc; let localStream; let callRoomId; let isMuted = false; let isVideoMuted = false;
     let callTimerInterval = null; let callSeconds = 0; let callUnsubscribers = [];
     let isVideoCall = false; let currentFacingMode = "user"; let callDirection = "";
-    let isLocalPiP = true; let isBeautyOn = false; // Video Swap & Filter states
+    let isLocalPiP = true; let isBeautyOn = false; 
     const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
     const ringtone = document.getElementById("ringtone-audio");
@@ -1184,20 +1184,46 @@
         }
     };
 
+    // --- FIX FOR CAMERA SWITCH (Permission Denied Issue) ---
     document.getElementById("btn-switch-camera").onclick = async () => {
         if (!isVideoCall || !localStream) return;
+        
+        let prevMode = currentFacingMode;
         currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+        
         try {
-            const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
-            const newVideoTrack = newStream.getVideoTracks()[0];
-            const sender = pc.getSenders().find(s => s.track.kind === 'video');
-            if (sender) sender.replaceTrack(newVideoTrack);
+            // STEP 1: MUST stop the old camera track BEFORE requesting the new one!
             const oldVideoTrack = localStream.getVideoTracks()[0];
-            if (oldVideoTrack) { localStream.removeTrack(oldVideoTrack); oldVideoTrack.stop(); }
-            localStream.addTrack(newVideoTrack); newVideoTrack.enabled = !isVideoMuted;
-            localVidEle.srcObject = localStream; localVidEle.play().catch(e => console.error(e));
+            if (oldVideoTrack) { 
+                oldVideoTrack.stop(); 
+                localStream.removeTrack(oldVideoTrack); 
+            }
+            
+            // STEP 2: Request the new camera track
+            const newStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: currentFacingMode } 
+            });
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            
+            // STEP 3: Replace track for the person on the other end
+            if(pc) {
+                const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+                if (sender) sender.replaceTrack(newVideoTrack);
+            }
+            
+            // STEP 4: Update our local video element
+            localStream.addTrack(newVideoTrack); 
+            newVideoTrack.enabled = !isVideoMuted;
+            localVidEle.srcObject = localStream; 
+            localVidEle.play().catch(e => console.error(e));
+            
             updateVideoClasses();
-        } catch (err) { alert("Camera switch failed."); }
+            
+        } catch (err) { 
+            console.error(err);
+            alert("Camera switch failed. Permission denied or camera in use."); 
+            currentFacingMode = prevMode; // Revert if failed
+        }
     };
 
     function startCallTimer() {
