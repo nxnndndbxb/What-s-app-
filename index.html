@@ -519,7 +519,7 @@
         });
     }
 
-    // Profile Settings Image Compress
+    // DP Image Compress
     function compressImage(file, callback) {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -549,10 +549,37 @@
         document.getElementById("setting-show-online").checked = myProfile.showOnline;
         document.getElementById("user-settings-modal").style.display = "flex"; 
     };
+
     document.getElementById("my-settings-dp").onclick = () => document.getElementById("my-dp-upload").click();
+    
+    // DP UPLOAD TO CLOUDINARY
     document.getElementById("my-dp-upload").onchange = e => { 
-        if(e.target.files[0]) compressImage(e.target.files[0], base64Img => { document.getElementById("my-settings-dp").src = base64Img; });
+        if(e.target.files[0]) {
+            document.getElementById("my-settings-dp").style.opacity = "0.5"; // Loading visual
+            compressImage(e.target.files[0], async base64Img => { 
+                const formData = new FormData();
+                formData.append("file", base64Img); // Send compressed image to Cloudinary
+                formData.append("upload_preset", "my_chat_app");
+                
+                try {
+                    const response = await fetch(`https://api.cloudinary.com/v1_1/mj6imk2l/image/upload`, {
+                        method: "POST",
+                        body: formData
+                    });
+                    const data = await response.json();
+                    if(data.secure_url) {
+                        document.getElementById("my-settings-dp").src = data.secure_url;
+                    } else {
+                        alert("Profile Picture upload failed!");
+                    }
+                } catch(err) {
+                    alert("Error uploading DP. Check your connection.");
+                }
+                document.getElementById("my-settings-dp").style.opacity = "1";
+            });
+        }
     };
+
     document.getElementById("save-settings-btn").onclick = async () => { 
         let n = document.getElementById("my-display-name").value.trim(); 
         let b = document.getElementById("my-bio").value.trim();
@@ -567,7 +594,6 @@
             showOnline: showOn
         }); 
         
-        // Instantly update live presence if changed
         if(showOn) { update(dbRef(db, `Users/${currentUser}`), { online: true }); } 
         else { update(dbRef(db, `Users/${currentUser}`), { online: false, lastSeen: serverTimestamp() }); }
 
@@ -695,7 +721,7 @@
                 document.getElementById("chat-user-display").innerText = d?.displayName || id; 
                 document.getElementById("chat-header-dp").src = d?.dp || "https://cdn-icons-png.flaticon.com/512/149/149071.png"; 
                 
-                let showStatus = d?.showOnline !== false; // if they have it enabled
+                let showStatus = d?.showOnline !== false;
                 if(showStatus) {
                     document.getElementById("chat-status-display").innerText = d?.online ? "Online" : (d?.lastSeen ? "Last seen " + formatTime12H(d.lastSeen) : "Offline"); 
                 } else {
@@ -712,7 +738,6 @@
     const msgInput = document.getElementById("msg-input");
     msgInput.addEventListener('input', () => { document.getElementById("send-btn").style.display = msgInput.value.trim() ? "flex" : "none"; document.getElementById("record-btn").style.display = msgInput.value.trim() ? "none" : "flex"; });
 
-    // Lightning Fast Send Function using Native Realtime DB
     async function handleSendMsg(type, payload, extraInfo = {}) { 
         let msgObj = { sender: currentUser, senderName: myProfile.name, type: type, timestamp: serverTimestamp(), deletedForEveryone: false, read: false, ...extraInfo }; 
         if(type === 'text') msgObj.text = payload; 
@@ -725,13 +750,11 @@
         if (chatType === '1to1') {
             let id = currentRoomId.split("_").find(i => i !== currentUser);
             
-            // Ensure Both users have each other added to their list instantly so the chat shows up for everyone!
             let contactsUpdate = {};
             contactsUpdate[`Users/${currentUser}/contacts/${id}`] = true;
             contactsUpdate[`Users/${id}/contacts/${currentUser}`] = true;
             await update(dbRef(db), contactsUpdate);
             
-            // Update Unread Count
             let refUnread = dbRef(db, `Users/${id}/chatSettings/${currentRoomId}/unread`);
             get(refUnread).then(s => set(refUnread, (s.val() || 0) + 1));
         }
@@ -745,49 +768,63 @@
     };
     msgInput.onkeypress = e => { if(e.key === 'Enter') document.getElementById("send-btn").click(); };
     
-    // NATIVE FILE/MEDIA READING (Bypassing Firebase Storage blocks)
-    async function handleBase64Upload(file, type) {
+    // --- CHAT MEDIA CLOUDINARY UPLOAD METHOD ---
+    async function handleCloudinaryUpload(file, type, isAudioBlob = false) {
         if(!file) return;
-        if(file.size > 8 * 1024 * 1024) return alert("Please select a file under 8MB for instant sending.");
         
         document.getElementById("attachment-menu").style.display = "none";
+        
         let tempId = `temp_${Date.now()}`;
-        document.getElementById("chat-box").insertAdjacentHTML('beforeend', `<div class="message sent" id="${tempId}" style="color:var(--text-muted);"><span class="material-icons-round" style="font-size:16px; vertical-align:middle;">hourglass_empty</span> Sending ${type}...</div>`);
+        document.getElementById("chat-box").insertAdjacentHTML('beforeend', `<div class="message sent" id="${tempId}" style="color:var(--text-muted);"><span class="material-icons-round" style="font-size:16px; vertical-align:middle;">cloud_upload</span> Uploading ${type}...</div>`);
         document.getElementById("chat-box").scrollTop = document.getElementById("chat-box").scrollHeight;
         
-        if (type === 'image') {
-            compressImage(file, async (base64Str) => {
-                await handleSendMsg(type, base64Str, { fileName: file.name, fileSize: file.size });
-                document.getElementById(tempId)?.remove();
+        const CLOUD_NAME = "mj6imk2l"; 
+        const UPLOAD_PRESET = "my_chat_app"; 
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        // Determine correct Cloudinary resource type
+        let resourceType = 'raw'; 
+        if (type === 'image') resourceType = 'image';
+        else if (type === 'video' || type === 'audio') resourceType = 'video';
+
+        try {
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`, {
+                method: "POST",
+                body: formData
             });
-        } else {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                await handleSendMsg(type, reader.result, { fileName: file.name, fileSize: file.size });
-                document.getElementById(tempId)?.remove();
-            };
-            reader.onerror = () => { alert("Failed to read file."); document.getElementById(tempId)?.remove(); }
+            
+            const data = await response.json();
+            
+            if(data.secure_url) {
+                // Determine file name to show in chat
+                let finalFileName = isAudioBlob ? `Audio_${Date.now()}.webm` : file.name;
+                // Send fast URL to Firebase instead of full Base64 string
+                await handleSendMsg(type, data.secure_url, { fileName: finalFileName, fileSize: file.size });
+            } else {
+                alert("Upload failed: " + (data.error?.message || "Unknown error"));
+            }
+        } catch(err) {
+            console.error(err);
+            alert("Error uploading media. Check your connection.");
+        } finally {
+            document.getElementById(tempId)?.remove();
         }
     }
 
-    document.getElementById("file-upload-image").onchange = e => { handleBase64Upload(e.target.files[0], 'image'); e.target.value = ''; };
-    document.getElementById("file-upload-video").onchange = e => { handleBase64Upload(e.target.files[0], 'video'); e.target.value = ''; };
-    document.getElementById("file-upload-doc").onchange = e => { handleBase64Upload(e.target.files[0], 'document'); e.target.value = ''; };
+    document.getElementById("file-upload-image").onchange = e => { handleCloudinaryUpload(e.target.files[0], 'image'); e.target.value = ''; };
+    document.getElementById("file-upload-video").onchange = e => { handleCloudinaryUpload(e.target.files[0], 'video'); e.target.value = ''; };
+    document.getElementById("file-upload-doc").onchange = e => { handleCloudinaryUpload(e.target.files[0], 'document'); e.target.value = ''; };
 
-    // Voice Note Fix (Reliable Safari/Chrome Media Recorder)
+    // Voice Note Recorder (Also uses Cloudinary)
     let mediaRec; let audioChunks = [];
     document.getElementById("record-btn").onclick = async (e) => { 
         let btn = e.target.closest('button'); 
         if(!mediaRec || mediaRec.state === "inactive") { 
             try { 
-                let stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: { 
-                        echoCancellation: true, 
-                        noiseSuppression: true, 
-                        autoGainControl: true 
-                    } 
-                }); 
+                let stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); 
                 mediaRec = new MediaRecorder(stream); 
                 audioChunks = []; 
                 mediaRec.ondataavailable = ev => { if(ev.data.size > 0) audioChunks.push(ev.data); }; 
@@ -798,17 +835,9 @@
                     
                     let mimeType = mediaRec.mimeType || (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4');
                     let blob = new Blob(audioChunks, { type: mimeType }); 
-                    let reader = new FileReader();
-                    reader.readAsDataURL(blob);
                     
-                    let tempId = `temp_${Date.now()}`;
-                    document.getElementById("chat-box").insertAdjacentHTML('beforeend', `<div class="message sent" id="${tempId}" style="color:var(--text-muted);">Sending Voice Note...</div>`);
-                    document.getElementById("chat-box").scrollTop = document.getElementById("chat-box").scrollHeight;
-                    
-                    reader.onloadend = async () => {
-                        await handleSendMsg('audio', reader.result);
-                        document.getElementById(tempId)?.remove();
-                    };
+                    // Upload voice note directly to Cloudinary
+                    handleCloudinaryUpload(blob, 'audio', true);
                 }; 
                 
                 mediaRec.start(250); 
@@ -843,30 +872,21 @@
                 let div = document.createElement("div"); 
                 div.className = `message ${isMe ? 'sent' : 'received'}`; 
                 
-                // Context Menu handling
                 let pressTimer;
                 const startPress = () => pressTimer = setTimeout(() => window.openMsgOptions(childNode.key, m, isMe), 500);
                 div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', () => clearTimeout(pressTimer)); div.addEventListener('mouseleave', () => clearTimeout(pressTimer));
                 div.oncontextmenu = (e) => { e.preventDefault(); window.openMsgOptions(childNode.key, m, isMe); };
                 
-                // Swipe to Reply Handling (Left to Right Only)
                 let startX = 0, startY = 0;
                 div.addEventListener('touchstart', e => { 
-                    startPress();
-                    startX = e.touches[0].clientX; startY = e.touches[0].clientY; 
-                    div.style.transition = 'none'; 
+                    startPress(); startX = e.touches[0].clientX; startY = e.touches[0].clientY; div.style.transition = 'none'; 
                 }, {passive: true});
                 div.addEventListener('touchmove', e => { 
                     let dX = e.touches[0].clientX - startX; let dY = e.touches[0].clientY - startY; 
-                    if(dX > 0 && Math.abs(dX) > Math.abs(dY)) { 
-                        clearTimeout(pressTimer);
-                        if(e.cancelable) e.preventDefault(); 
-                        div.style.transform = `translateX(${Math.min(dX, 60)}px)`; 
-                    } 
+                    if(dX > 0 && Math.abs(dX) > Math.abs(dY)) { clearTimeout(pressTimer); if(e.cancelable) e.preventDefault(); div.style.transform = `translateX(${Math.min(dX, 60)}px)`; } 
                 }, {passive: false});
                 div.addEventListener('touchend', e => { 
-                    clearTimeout(pressTimer);
-                    div.style.transition = 'transform 0.2s'; div.style.transform = 'translateX(0)'; 
+                    clearTimeout(pressTimer); div.style.transition = 'transform 0.2s'; div.style.transform = 'translateX(0)'; 
                     let dX = e.changedTouches[0].clientX - startX; let dY = e.changedTouches[0].clientY - startY;
                     if(dX > 50 && dX > Math.abs(dY)) { 
                         replyingToMsg = { senderName: m.senderName, text: m.type === 'text' ? m.text : `📎 ${m.type}` };
@@ -877,7 +897,6 @@
                     } 
                 });
                 
-                // Read Receipts logic: Only show blue ticks if my user has Read Receipts enabled.
                 let tick = isMe && chatType === '1to1' ? (m.read && myProfile.readReceipts ? '<span style="color:#34B7F1;">✓✓</span>' : '<span>✓</span>') : '';
                 
                 if (m.deletedForEveryone) { 
@@ -885,17 +904,17 @@
                 } else { 
                     let rep = m.replyTo ? `<div style="background:rgba(0,0,0,0.05); border-left:3px solid var(--primary); padding:4px 8px; font-size:12px; margin-bottom:4px; border-radius:4px;"><strong>${m.replyTo.senderName}</strong><br>${m.replyTo.text}</div>` : '';
                     let content = "";
+                    
                     if(m.type === "text") content = formatRichText(m.text) + (m.edited ? '<span style="font-size:10px; font-style:italic; margin-left:5px;">(edited)</span>' : '');
+                    // Cloudinary Media URLs render perfectly with your original code
                     else if(m.type === "image") content = `<a href="${m.url}" download target="_blank"><img src="${m.url}" class="msg-media"></a>`;
                     else if(m.type === "video") content = `<video controls src="${m.url}" class="msg-video"></video>`;
                     else if(m.type === "audio") content = `<audio controls src="${m.url}" style="height:40px; width:220px; outline:none; border-radius: 20px;"></audio>`;
-                    else if(m.type === "document") content = `<a href="${m.url}" download target="_blank" class="msg-doc"><span class="material-icons-round">insert_drive_file</span> ${m.fileName}</a>`;
+                    else if(m.type === "document") content = `<a href="${m.url}" download target="_blank" class="msg-doc"><span class="material-icons-round">insert_drive_file</span> ${m.fileName || 'Document'}</a>`;
                     
-                    // Reactions Display
                     let rxnHtml = "";
                     if(m.reactions) {
-                        let rxns = Object.values(m.reactions);
-                        let uniqueRxns = [...new Set(rxns)];
+                        let rxns = Object.values(m.reactions); let uniqueRxns = [...new Set(rxns)];
                         rxnHtml = `<div class="msg-reactions">${uniqueRxns.join("")} ${rxns.length > 1 ? rxns.length : ''}</div>`;
                     }
 
@@ -988,8 +1007,6 @@
             if (oldVideoTrack) { localStream.removeTrack(oldVideoTrack); oldVideoTrack.stop(); }
             
             localStream.addTrack(newVideoTrack);
-            
-            // Reapply video mute state if they switch while hidden
             newVideoTrack.enabled = !isVideoMuted;
             
             const localVidEle = document.getElementById("local-video");
@@ -998,19 +1015,14 @@
         } catch (err) { alert("Camera switch failed."); }
     };
 
-    // Make local video PIP draggable
     const localVidEle = document.getElementById("local-video");
     let isDraggingVid = false, dragStartX, dragStartY, initialVidX, initialVidY;
     
     function startVidDrag(clientX, clientY) {
         isDraggingVid = true; 
-        dragStartX = clientX; 
-        dragStartY = clientY;
-        initialVidX = localVidEle.offsetLeft; 
-        initialVidY = localVidEle.offsetTop;
-        // Release bottom/right constraints so left/top take over seamlessly
-        localVidEle.style.right = 'auto'; 
-        localVidEle.style.bottom = 'auto';
+        dragStartX = clientX; dragStartY = clientY;
+        initialVidX = localVidEle.offsetLeft; initialVidY = localVidEle.offsetTop;
+        localVidEle.style.right = 'auto'; localVidEle.style.bottom = 'auto';
     }
     
     localVidEle.addEventListener('mousedown', (e) => startVidDrag(e.clientX, e.clientY));
@@ -1154,7 +1166,6 @@
         
         let localVidEle = document.getElementById("local-video");
         localVidEle.srcObject = null; localVidEle.style.display = "none"; 
-        // Reset PIP positional constraints
         localVidEle.style.top = 'auto'; localVidEle.style.left = 'auto';
         localVidEle.style.bottom = '130px'; localVidEle.style.right = '20px';
 
