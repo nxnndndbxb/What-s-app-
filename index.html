@@ -39,7 +39,6 @@
         .item-name { font-size: 16px; font-weight: bold; color: #333; }
         .item-sub { font-size: 13px; color: #777; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;}
         
-        /* Unread Message Badge Fix */
         .unread-badge { background: #FF0000; color: white; font-size: 12px; font-weight: bold; padding: 0 6px; border-radius: 12px; margin-left: 10px; display: none; align-items: center; justify-content: center; min-width: 20px; height: 20px; box-shadow: 0 2px 4px rgba(255,0,0,0.3); }
 
         /* In-App Notification */
@@ -49,13 +48,21 @@
         .notif-text h4 { font-size: 15px; margin-bottom: 2px; }
         .notif-text p { font-size: 13px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px;}
 
-        /* Chat Screen */
+        /* Chat Screen & Message Enhancements */
         #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background-color: #f5f5f5; }
-        .message { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 15px; position: relative; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); cursor: pointer; }
+        
+        .message { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 15px; position: relative; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: transform 0.1s; }
+        .message:active { transform: scale(0.98); }
         .message.sent { background: #FFEBEB; align-self: flex-end; border-top-right-radius: 0; }
         .message.received { background: #ffffff; align-self: flex-start; border-top-left-radius: 0; border: 1px solid #eee; }
         .msg-time { font-size: 11px; color: #999; text-align: right; margin-top: 5px; display: block; }
         .deleted-msg { font-style: italic; color: #888; }
+
+        /* Reply & Forward UI */
+        .reply-preview { background: rgba(0,0,0,0.06); border-left: 4px solid #FF0000; padding: 6px 8px; border-radius: 4px; margin-bottom: 5px; font-size: 13px; line-height: 1.3; }
+        .reply-preview strong { color: #FF0000; font-size: 12px; }
+        .forwarded-label { font-size: 11px; color: #888; font-style: italic; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+        #replying-to-container { display: none; padding: 10px 30px 10px 10px; background: #e9e9e9; border-left: 4px solid #FF0000; font-size: 13px; position: relative; margin: 0 10px 10px 10px; border-radius: 6px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
         
         #input-area { display: flex; padding: 10px; background: #ffffff; align-items: center; gap: 8px; border-top: 1px solid #eee; }
         #msg-input { flex: 1; padding: 12px 15px; border: 1px solid #ddd; border-radius: 24px; outline: none; font-size: 15px; background: #f9f9f9;}
@@ -73,6 +80,7 @@
         .modal { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; }
         .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-btn { padding: 12px; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; background: #eee; width: 100%; font-weight: bold; transition: 0.2s; }
+        .modal-btn:hover { background: #ddd; }
         .modal-btn.danger { background: #FF0000; color: white; }
         .contact-check-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; text-align: left; cursor: pointer;}
         
@@ -196,6 +204,12 @@
         
         <div id="chat-box"></div>
         
+        <div id="replying-to-container">
+            <strong id="reply-sender"></strong>
+            <p id="reply-text" style="margin:0; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></p>
+            <span onclick="cancelReply()" style="position:absolute; right:10px; top:10px; cursor:pointer; font-weight:bold;">✖</span>
+        </div>
+
         <div id="input-area">
             <input type="text" id="msg-input" placeholder="Type a message..." autocomplete="off" />
             <button id="send-btn" class="action-btn">➤</button>
@@ -208,7 +222,30 @@
 
     <!-- Modals -->
     <div id="user-settings-modal" class="modal"> <div class="modal-content"> <h3>My Profile Settings</h3> <div style="margin: 15px 0;"> <img id="my-settings-dp" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid #FF0000;"> <input type="file" id="my-dp-upload" accept="image/*" style="display:none;"> </div> <input type="text" id="my-display-name" class="input-field" placeholder="Enter Your Name"> <label style="display: flex; align-items: center; margin: 15px 0; cursor: pointer; font-size:14px; color:#555;"> <input type="checkbox" id="global-notifications" style="width: 20px; height: 20px; margin-right: 10px; accent-color: #FF0000;" checked> 🔔 Enable App Notifications </label> <button id="save-settings-btn" class="btn-primary">Save Profile</button> <button onclick="closeModal('user-settings-modal')" class="modal-btn">Cancel</button> </div> </div>
-    <div id="msg-delete-modal" class="modal"> <div class="modal-content"> <h3>Message Options</h3> <button id="btn-delete-everyone" class="modal-btn danger">Delete for Everyone</button> <button onclick="closeModal('msg-delete-modal')" class="modal-btn">Cancel</button> </div> </div>
+    
+    <!-- NEW: Message Options Modal (Replaces Delete Modal) -->
+    <div id="msg-options-modal" class="modal"> 
+        <div class="modal-content"> 
+            <h3>Message Options</h3> 
+            <button id="btn-reply-msg" class="modal-btn">↩️ Reply</button>
+            <button id="btn-forward-msg" class="modal-btn">➦ Forward</button>
+            <button id="btn-copy-msg" class="modal-btn">📋 Copy Text</button>
+            <button id="btn-delete-me" class="modal-btn danger">🗑️ Delete for Me</button>
+            <button id="btn-delete-everyone" class="modal-btn danger" style="display:none;">🚫 Delete for Everyone</button> 
+            <button onclick="closeModal('msg-options-modal')" class="modal-btn" style="background:#ddd;">Cancel</button> 
+        </div> 
+    </div>
+
+    <!-- NEW: Forward Message Modal -->
+    <div id="forward-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom:10px;">Forward Message To:</h3>
+            <div id="forward-contacts-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 15px; padding:5px;"></div>
+            <button id="btn-send-forward" class="btn-primary">➤ Send Forward</button>
+            <button onclick="closeModal('forward-modal')" class="modal-btn">Cancel</button>
+        </div>
+    </div>
+
     <div id="create-group-modal" class="modal"> <div class="modal-content"> <h3 id="create-modal-title" style="margin-bottom: 15px;">Create New Group</h3> <input type="text" id="new-group-name" class="input-field" placeholder="Enter Group Subject"> <input type="text" id="new-group-desc" class="input-field" placeholder="Group Description (Optional)" style="font-size:14px;"> <div style="text-align: left; font-weight: bold; margin: 10px 0 5px 0;">Select Contacts:</div> <div id="group-contacts-list" style="max-height: 180px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 15px;"></div> <button id="confirm-create-group" class="btn-primary">✔ Create</button> <button onclick="closeModal('create-group-modal')" class="modal-btn">Cancel</button> </div> </div>
     <div id="group-settings-modal" class="modal"> <div class="modal-content"> <h3 style="margin-bottom: 15px;">Group Info</h3> <img id="group-settings-dp" src="https://cdn-icons-png.flaticon.com/512/615/615075.png" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;"> <input type="file" id="group-dp-upload" accept="image/*" style="display:none;"> <div style="display:flex; justify-content:center; align-items:center; gap:10px;"> <h4 id="group-settings-name" style="margin:0;">Group Name</h4> <button id="btn-edit-group-name" style="display:none; border:none; background:none; cursor:pointer; font-size:16px;">✏️</button> </div> <div style="display:flex; justify-content:center; align-items:center; gap:5px; margin-bottom:15px;"> <p id="group-settings-desc" style="font-size:12px; color:gray; margin:0;">Description</p> <button id="btn-edit-group-desc" style="display:none; border:none; background:none; cursor:pointer; font-size:12px;">✏️</button> </div> <button id="btn-invite-link" class="modal-btn" style="background:#ffebee; color:#FF0000; margin-bottom: 15px; font-weight:bold;">🔗 Copy Invite ID</button> <div id="admin-controls" style="display: none; background: #fff5f5; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: left;"> <strong style="color: #FF0000;">⚙️ Admin Settings</strong> <label style="display: flex; align-items: center; margin-top: 10px; cursor: pointer;"> <input type="checkbox" id="admin-only-msg" style="width: 20px; height: 20px; margin-right: 10px; accent-color: #FF0000;"> Only Admins can send messages </label> <div style="display: flex; gap: 5px; margin-top: 10px;"> <button id="btn-change-group-dp" class="modal-btn" style="background:#FF0000; color:white; flex:1; margin:0;">Update DP</button> <button id="btn-add-more-members" class="modal-btn" style="background:#333; color:white; flex:1; margin:0;">➕ Add Members</button> </div> <button id="btn-delete-group" class="modal-btn danger" style="display:none; margin-top:10px;">🗑️ Delete Group</button> </div> <div style="text-align: left; font-weight: bold; margin-bottom: 5px;">Participants:</div> <div id="group-members-display" style="max-height: 150px; overflow-y: auto; text-align: left; font-size: 14px; background: #f9f9f9; padding: 10px; border-radius: 5px;"></div> <button onclick="closeModal('group-settings-modal')" class="modal-btn">Close</button> </div> </div>
     <div id="add-more-members-modal" class="modal"> <div class="modal-content"> <h3 style="margin-bottom: 15px;">Add New Members</h3> <div id="more-members-list" style="max-height: 180px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 15px;"></div> <button id="confirm-add-members" class="btn-primary">✔ Add to Group</button> <button onclick="closeModal('add-more-members-modal')" class="modal-btn">Cancel</button> </div> </div>
@@ -234,6 +271,12 @@
     let loginTime = Date.now(); let notifiedMsgs = new Set(); let myChatMutes = {};
     let myChatSettings = {}; 
     let isRecipientOnline = false;
+
+    // Advanced Message Variables
+    let selectedMsgId = null;
+    let selectedMsgData = null;
+    let replyingToMsg = null;
+    let messageToForward = null;
 
     const SYSTEM_PASSWORD = "03009";
 
@@ -307,7 +350,6 @@
             } 
         }); 
         
-        // Listen to Chat Settings (Mutes and Unread Badges)
         onValue(dbRef(db, `Users/${u}/chatSettings`), s => { 
             if(s.exists()) { 
                 myChatSettings = s.val(); 
@@ -343,7 +385,6 @@
     document.getElementById("confirm-create-group").onclick = async () => { let n = document.getElementById("new-group-name").value.trim(); let desc = document.getElementById("new-group-desc").value.trim(); let sel = Array.from(document.querySelectorAll('.grp-cb:checked')).map(cb => cb.value); if(!n || sel.length===0) return alert("Fill data and select contacts!"); if (createMode === "group") { let gId = "GRP_" + Date.now(); let mem = { [currentUser]: true }; sel.forEach(c => mem[c] = true); await set(dbRef(db, `Groups/${gId}`), { name: n, description: desc, admin: currentUser, dp: "", members: mem, settings: { onlyAdminMsg: false } }); let up = {}; Object.keys(mem).forEach(m => { up[`Users/${m}/groups/${gId}`] = true; }); await update(dbRef(db), up); alert("Group created!"); } else { let bId = "BCAST_" + Date.now(); let mem = {}; sel.forEach(c => mem[c] = true); await set(dbRef(db, `Users/${currentUser}/broadcasts/${bId}`), { name: n, members: mem }); alert("Broadcast list created!"); } closeModal('create-group-modal'); document.getElementById("new-group-name").value = ""; document.getElementById("new-group-desc").value = ""; };
     document.getElementById("menu-join-group").onclick = async () => { let code = prompt("Enter Group Invite ID (e.g. GRP_123456):"); if(code) { let snap = await get(child(dbRef(db), `Groups/${code}`)); if(snap.exists()) { await set(dbRef(db, `Groups/${code}/members/${currentUser}`), true); await set(dbRef(db, `Users/${currentUser}/groups/${code}`), true); alert("You have joined the group!"); } else { alert("Invalid Group ID!"); } } };
 
-    // Chat List Generation WITH BADGE FIX
     function loadChatList() { 
         const list = document.getElementById("chats-list"); 
         
@@ -359,7 +400,6 @@
                     
                     let existingItem = document.getElementById(`chat-item-${c}`);
                     if(!existingItem) { 
-                        // Using insertAdjacentHTML to prevent DOM wiping
                         list.insertAdjacentHTML('beforeend', `<div class="list-item" id="chat-item-${c}" onclick="openChat('${c}', '1to1', '${dp}', '${dN}')"><img src="${dp}" class="item-dp"><div class="item-info"><div class="item-name">${dN}</div><div class="item-sub">Tap to chat</div></div><div class="unread-badge" id="badge-${rId}" style="display:${badgeDisplay};">${unread}</div><span id="mute-${rId}" style="margin-left: 5px;">${myChatMutes[rId] ? "🔇":""}</span></div>`); 
                     } else { 
                         existingItem.querySelector('.item-name').innerText = dN; 
@@ -470,7 +510,8 @@
         document.getElementById("header-call-btn").style.display = isP2P ? "block" : "none";
         document.getElementById("header-video-call-btn").style.display = isP2P ? "block" : "none";
         
-        // Remove Unread Badge count globally on opening chat
+        cancelReply(); // Reset any active replies
+        
         if (currentRoomId) {
             set(dbRef(db, `Users/${currentUser}/chatSettings/${currentRoomId}/unread`), 0);
         }
@@ -507,19 +548,22 @@
 
     document.getElementById("back-btn").onclick = () => {
         showScreen("dashboard-screen");
-        currentRoomId = ""; // Reset room ID so incoming msgs trigger badge correctly
+        currentRoomId = ""; 
     };
 
     document.getElementById("menu-mute-chat").onclick = async () => { let isCurrentlyMuted = myChatMutes[currentRoomId] === true; await update(dbRef(db, `Users/${currentUser}/chatSettings/${currentRoomId}`), { muted: !isCurrentlyMuted }); document.getElementById("menu-mute-chat").innerText = !isCurrentlyMuted ? "🔊 Unmute Notifications" : "🔇 Mute Notifications"; alert(!isCurrentlyMuted ? "Chat Muted!" : "Chat Unmuted!"); document.getElementById("chat-menu-dropdown").classList.remove('show'); };
     document.getElementById("menu-clear-chat").onclick = async () => { if(confirm("Clear this chat?")) await set(dbRef(db, `Users/${currentUser}/chatSettings/${currentRoomId}/clearedAt`), serverTimestamp()); };
 
-    let selectedMsgId = null;
-    
-    // SEND MESSAGE AND AUTO ADD CONTACT + INCREMENT BADGE
     async function handleSendMsg(type, payload) { 
         let msgObj = { sender: currentUser, senderName: myProfile.name, type: type, timestamp: serverTimestamp(), deletedForEveryone: false, read: false }; 
         if(type === 'text') msgObj.text = payload; else if(type === 'audio') msgObj.audioUrl = payload; 
         
+        // Attach Reply Metadata
+        if (replyingToMsg) {
+            msgObj.replyTo = replyingToMsg;
+            cancelReply();
+        }
+
         if (isBroadcastList) { 
             await push(dbRef(db, `BroadcastChats/${currentRoomId}`), msgObj); 
             for(let m of Object.keys(currentBroadcastMembers)) { 
@@ -533,11 +577,9 @@
         } else { 
             await push(dbRef(db, `Chats/${currentRoomId}`), msgObj); 
             
-            // ACCURATE BADGE UPDATE & AUTO ADD CONTACT LOGIC FIX
             if (chatType === '1to1') {
                 let recipientId = currentRoomId.split("_").find(id => id !== currentUser);
                 if (recipientId) {
-                    // Auto-add contacts so the chat list ALWAYS shows them
                     let contactsUpdate = {};
                     contactsUpdate[`Users/${recipientId}/contacts/${currentUser}`] = true;
                     contactsUpdate[`Users/${currentUser}/contacts/${recipientId}`] = true;
@@ -575,6 +617,7 @@
                 let m = child.val(); 
                 let mt = typeof m.timestamp === 'number' ? m.timestamp : Date.now(); 
                 if(chatClearedAt && mt < chatClearedAt) return; 
+                if(m.deletedFor && m.deletedFor[currentUser]) return; // Skip if Deleted For Me
                 
                 let isMe = m.sender === currentUser; 
 
@@ -591,7 +634,22 @@
                 
                 let div = document.createElement("div"); 
                 div.className = `message ${isMe ? 'sent' : 'received'}`; 
-                div.onclick = () => { if(isMe && !m.deletedForEveryone && !isBroadcastList) { selectedMsgId = child.key; document.getElementById("msg-delete-modal").style.display = "flex"; } }; 
+                
+                // Advanced Long Press & Context Menu Logic
+                let pressTimer;
+                const startPress = (e) => {
+                    if (e.type === 'mousedown' && e.button !== 0) return;
+                    pressTimer = setTimeout(() => { if(!isBroadcastList) window.openMsgOptions(child.key, m, isMe); }, 550);
+                };
+                const cancelPress = () => clearTimeout(pressTimer);
+                
+                div.addEventListener('mousedown', startPress);
+                div.addEventListener('mouseup', cancelPress);
+                div.addEventListener('mouseleave', cancelPress);
+                div.addEventListener('touchstart', startPress, {passive: true});
+                div.addEventListener('touchend', cancelPress);
+                div.addEventListener('touchmove', cancelPress);
+                div.oncontextmenu = (e) => { e.preventDefault(); if(!isBroadcastList) window.openMsgOptions(child.key, m, isMe); };
                 
                 let tickHTML = '';
                 if (isMe && !m.deletedForEveryone && chatType === '1to1') {
@@ -607,26 +665,155 @@
                 if (m.deletedForEveryone) { 
                     div.innerHTML = `<span class="deleted-msg">🚫 This message was deleted</span> <span class="msg-time">${formatTime12H(m.timestamp)}</span>`; 
                 } else { 
+                    let forwardedHTML = m.isForwarded ? `<div class="forwarded-label">➦ Forwarded</div>` : ``;
+                    let replyHTML = '';
+                    if (m.replyTo) {
+                        replyHTML = `<div class="reply-preview"><strong>${m.replyTo.senderName}</strong><br>${m.replyTo.type === 'text' ? m.replyTo.text : '🎤 Voice Note'}</div>`;
+                    }
                     let cHTML = m.type === "text" ? m.text : `<audio controls src="${m.audioUrl}" style="height:35px; width:200px;"></audio>`; 
-                    div.innerHTML = `${isGroupChat && !isMe ? `<strong style="font-size:11px;color:#FF0000;">${m.senderName || m.sender}</strong><br>` : ""}${cHTML} <span class="msg-time">${formatTime12H(m.timestamp)} ${tickHTML}</span>`; 
+                    div.innerHTML = `${forwardedHTML}${isGroupChat && !isMe ? `<strong style="font-size:11px;color:#FF0000;">${m.senderName || m.sender}</strong><br>` : ""}${replyHTML}${cHTML} <span class="msg-time">${formatTime12H(m.timestamp)} ${tickHTML}</span>`; 
                 } 
                 box.appendChild(div); 
             }); 
             box.scrollTop = box.scrollHeight; 
 
-            // Update read flags and Reset Unread count while chat is actively open
             if (Object.keys(unreadUpdates).length > 0) {
                 update(dbRef(db), unreadUpdates);
                 set(dbRef(db, `Users/${currentUser}/chatSettings/${currentRoomId}/unread`), 0);
             }
         }); 
     }
-    document.getElementById("btn-delete-everyone").onclick = async () => { if(selectedMsgId) { await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}`), { deletedForEveryone: true, text: "", audioUrl: "", type: "deleted" }); closeModal("msg-delete-modal"); } };
 
+    // --- Message Context Menu Actions (NEW) ---
+    window.openMsgOptions = (id, data, isMe) => {
+        selectedMsgId = id;
+        selectedMsgData = data;
+        
+        if (data.deletedForEveryone) return;
+        
+        document.getElementById("btn-copy-msg").style.display = data.type === 'text' ? 'block' : 'none';
+        document.getElementById("btn-delete-everyone").style.display = isMe ? 'block' : 'none';
+        document.getElementById("msg-options-modal").style.display = "flex";
+    };
+
+    document.getElementById("btn-reply-msg").onclick = () => {
+        replyingToMsg = {
+            id: selectedMsgId,
+            senderName: selectedMsgData.senderName || selectedMsgData.sender,
+            text: selectedMsgData.type === 'text' ? selectedMsgData.text : '🎤 Voice Note',
+            type: selectedMsgData.type
+        };
+        document.getElementById("reply-sender").innerText = replyingToMsg.senderName;
+        document.getElementById("reply-text").innerText = replyingToMsg.text;
+        document.getElementById("replying-to-container").style.display = "block";
+        closeModal("msg-options-modal");
+        document.getElementById("msg-input").focus();
+    };
+
+    window.cancelReply = () => {
+        replyingToMsg = null;
+        document.getElementById("replying-to-container").style.display = "none";
+    };
+
+    document.getElementById("btn-copy-msg").onclick = async () => {
+        if (selectedMsgData && selectedMsgData.type === 'text') {
+            try { await navigator.clipboard.writeText(selectedMsgData.text); } catch(e) {}
+        }
+        closeModal("msg-options-modal");
+    };
+
+    document.getElementById("btn-delete-me").onclick = async () => {
+        if(selectedMsgId) {
+            await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}/deletedFor`), { [currentUser]: true });
+            closeModal("msg-options-modal");
+        }
+    };
+
+    document.getElementById("btn-delete-everyone").onclick = async () => { 
+        if(selectedMsgId) { 
+            await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}`), { deletedForEveryone: true, text: "", audioUrl: "", type: "deleted", replyTo: null }); 
+            closeModal("msg-options-modal"); 
+        } 
+    };
+
+    // Forward Logic
+    document.getElementById("btn-forward-msg").onclick = async () => {
+        messageToForward = { ...selectedMsgData };
+        delete messageToForward.timestamp;
+        delete messageToForward.read;
+        delete messageToForward.replyTo;
+        
+        const list = document.getElementById("forward-contacts-list");
+        list.innerHTML = "<p style='color:gray; font-size:12px;'>Loading...</p>";
+        
+        const [cSnap, gSnap] = await Promise.all([
+            get(child(dbRef(db), `Users/${currentUser}/contacts`)),
+            get(child(dbRef(db), `Users/${currentUser}/groups`))
+        ]);
+        
+        list.innerHTML = "";
+        if (cSnap.exists()) {
+            list.innerHTML += "<strong style='display:block; padding:5px 0; border-bottom:1px solid #eee;'>Contacts</strong>";
+            Object.keys(cSnap.val()).forEach(c => {
+                list.innerHTML += `<label class="contact-check-item"><span>👤 ${c}</span><input type="checkbox" class="fwd-cb" value="1to1_${c}"></label>`;
+            });
+        }
+        if (gSnap.exists()) {
+            list.innerHTML += "<strong style='display:block; padding:5px 0; border-bottom:1px solid #eee; margin-top:10px;'>Groups</strong>";
+            Object.keys(gSnap.val()).forEach(g => {
+                list.innerHTML += `<label class="contact-check-item"><span>👥 ${g}</span><input type="checkbox" class="fwd-cb" value="group_${g}"></label>`;
+            });
+        }
+        
+        closeModal("msg-options-modal");
+        document.getElementById("forward-modal").style.display = "flex";
+    };
+
+    document.getElementById("btn-send-forward").onclick = async () => {
+        const selected = Array.from(document.querySelectorAll('.fwd-cb:checked')).map(cb => cb.value);
+        if(selected.length === 0) return alert("Select at least one chat to forward to!");
+        
+        for(let item of selected) {
+            const [type, id] = item.split("_");
+            let targetRoomId = (type === '1to1') ? [currentUser, id].sort().join("_") : item.replace('group_', ''); 
+            
+            let fwdMsg = {
+                ...messageToForward,
+                sender: currentUser,
+                senderName: myProfile.name,
+                timestamp: serverTimestamp(),
+                deletedForEveryone: false,
+                read: false,
+                isForwarded: true
+            };
+            
+            await push(dbRef(db, `Chats/${targetRoomId}`), fwdMsg);
+            
+            if (type === '1to1') {
+                let refUnread = dbRef(db, `Users/${id}/chatSettings/${targetRoomId}/unread`);
+                get(refUnread).then(s => set(refUnread, (s.val() || 0) + 1));
+                update(dbRef(db), { [`Users/${id}/contacts/${currentUser}`]: true, [`Users/${currentUser}/contacts/${id}`]: true });
+            } else {
+                let gSnap = await get(child(dbRef(db), `Groups/${targetRoomId}/members`));
+                if (gSnap.exists()) {
+                    Object.keys(gSnap.val()).forEach(m => {
+                        if (m !== currentUser) {
+                            let refUnread = dbRef(db, `Users/${m}/chatSettings/${targetRoomId}/unread`);
+                            get(refUnread).then(s => set(refUnread, (s.val() || 0) + 1));
+                        }
+                    });
+                }
+            }
+        }
+        
+        closeModal("forward-modal");
+    };
+
+    // Voice Record Logic
     let mediaRec; let audioChunks = [];
     document.getElementById("record-btn").onclick = async (e) => { let btn = e.target; if(!mediaRec || mediaRec.state === "inactive") { try { let stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRec = new MediaRecorder(stream, { audioBitsPerSecond: 16000 }); audioChunks = []; mediaRec.ondataavailable = ev => { if(ev.data.size > 0) audioChunks.push(ev.data); }; mediaRec.onstop = () => { stream.getTracks().forEach(t => t.stop()); if(audioChunks.length === 0) return; let reader = new FileReader(); reader.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' })); reader.onloadend = async () => { await handleSendMsg('audio', reader.result); }; }; mediaRec.start(250); btn.classList.add("recording"); btn.innerText = "⏹"; } catch (err) { alert("Mic Permission Required!"); } } else { mediaRec.stop(); btn.classList.remove("recording"); btn.innerText = "🎤"; } };
 
-    // --- 📞 100% FIXED VIDEO/AUDIO CALLING SYSTEM ---
+    // Calls Logic
     document.getElementById("header-call-btn").onclick = () => startCall(false); 
     document.getElementById("header-video-call-btn").onclick = () => startCall(true); 
     document.getElementById("btn-end-call").onclick = endCall;
