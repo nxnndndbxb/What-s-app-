@@ -23,6 +23,7 @@
             --border-color: #e0e0e0;
             --danger: #b71c1c;
             --shadow: rgba(0,0,0,0.1);
+            --select-bg: rgba(52, 183, 241, 0.2);
         }
 
         .dark-mode {
@@ -41,6 +42,7 @@
             --border-color: #3d0e0e;
             --danger: #f15c6d;
             --shadow: rgba(0,0,0,0.4);
+            --select-bg: rgba(52, 183, 241, 0.15);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; }
@@ -87,9 +89,11 @@
         /* Chat Screen */
         #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: var(--chat-bg); background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; overflow-x: hidden; }
         
-        .message { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 15px; position: relative; word-wrap: break-word; box-shadow: 0 1px 1px var(--shadow); cursor: pointer; user-select: none; color: var(--text-main); }
+        .message { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 15px; position: relative; word-wrap: break-word; box-shadow: 0 1px 1px var(--shadow); cursor: pointer; user-select: none; color: var(--text-main); border: 2px solid transparent; transition: background-color 0.2s, border 0.2s; }
         .message.sent { background: var(--msg-sent); align-self: flex-end; border-top-right-radius: 0; }
         .message.received { background: var(--msg-received); align-self: flex-start; border-top-left-radius: 0; }
+        .message.selected-msg { background: var(--select-bg) !important; border: 2px solid rgba(52, 183, 241, 0.8) !important; box-shadow: 0 0 10px rgba(52, 183, 241, 0.5); }
+        
         .msg-time { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 5px; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
         .deleted-msg { font-style: italic; color: var(--text-muted); }
         
@@ -137,7 +141,7 @@
         .sticker-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         .sticker-grid { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; align-content: flex-start; }
         
-        /* Media Viewer (Full Screen) */
+        /* Media Viewer */
         #media-viewer { display: none; background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column; }
         .viewer-header { width: 100%; display: flex; justify-content: space-between; padding: 20px; position: absolute; top: 0; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent); }
 
@@ -222,7 +226,7 @@
         <div class="call-btns" id="call-btn-container">
             <button id="btn-switch-camera" class="call-btn" style="display:none;" title="Switch Camera"><span class="material-icons-round">flip_camera_ios</span></button>
             <button id="btn-beauty-filter" class="call-btn" style="display:none;" title="Beauty Filter"><span class="material-icons-round">face_retouching_natural</span></button>
-            <button id="btn-mute-video" class="call-btn" style="display:none;" title="Turn off Video"><span class="material-icons-round">videocam</span></button>
+            <button id="btn-mute-video" class="call-btn" style="display:none;" title="Turn on/off Video"><span class="material-icons-round">videocam</span></button>
             <button id="btn-mute-call" class="call-btn" style="display:none;" title="Mute Mic"><span class="material-icons-round">mic</span></button>
             <button id="btn-accept-call" class="call-btn btn-accept"><span class="material-icons-round">call</span></button>
             <button id="btn-end-call" class="call-btn btn-end"><span class="material-icons-round">call_end</span></button>
@@ -259,8 +263,9 @@
 
     <!-- Chat Screen -->
     <div id="chat-screen" class="screen">
-        <div class="header">
-            <div style="display: flex; align-items: center; width: 100%;">
+        <div class="header" style="padding: 0;">
+            <!-- Normal Header -->
+            <div id="normal-chat-header" style="display: flex; align-items: center; width: 100%; padding: 12px 20px;">
                 <span id="back-btn" class="material-icons-round" style="cursor: pointer; margin-right: 10px;">arrow_back</span>
                 
                 <div id="chat-info-area" style="display: flex; align-items: center; flex: 1; cursor: pointer; overflow:hidden;">
@@ -279,6 +284,37 @@
                         <div id="chat-menu-dropdown" class="dropdown-content">
                             <a id="menu-mute-chat"><span class="material-icons-round">volume_off</span> Mute</a>
                             <a id="menu-clear-chat"><span class="material-icons-round">delete_sweep</span> Clear Chat</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Selection Action Header -->
+            <div id="selection-chat-header" style="display: none; align-items: center; width: 100%; padding: 12px 15px; background: var(--header-bg);">
+                <span id="cancel-selection-btn" onclick="exitSelectionMode()" class="material-icons-round" style="cursor:pointer; margin-right:15px; color:white;">arrow_back</span>
+                <span id="selection-count" style="font-size:18px; font-weight:bold; flex:1; color:white;">1</span>
+                
+                <!-- Emojis (Visible only for 1 item) -->
+                <div id="selection-emojis" style="display:flex; gap:10px; margin-right: 15px; font-size: 20px; cursor: pointer;">
+                    <span onclick="addReaction('❤️')">❤️</span>
+                    <span onclick="addReaction('👍')">👍</span>
+                    <span onclick="addReaction('😂')">😂</span>
+                    <span onclick="addReaction('😮')">😮</span>
+                    <span onclick="addReaction('😢')">😢</span>
+                    <span onclick="addReaction('🙏')">🙏</span>
+                </div>
+
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <span class="material-icons-round" id="selection-copy-btn" style="cursor:pointer; color:white;" title="Copy">content_copy</span>
+                    <span class="material-icons-round" id="selection-delete-btn" style="cursor:pointer; color:white;" title="Delete">delete</span>
+                    
+                    <div class="dropdown">
+                        <span id="selection-menu-dots" class="material-icons-round" style="cursor: pointer; color:white;">more_vert</span>
+                        <div id="selection-menu-dropdown" class="dropdown-content">
+                            <a id="selection-reply-btn"><span class="material-icons-round">reply</span> Reply</a>
+                            <a id="selection-forward-btn"><span class="material-icons-round">forward</span> Forward</a>
+                            <a id="selection-edit-btn"><span class="material-icons-round">edit</span> Edit</a>
+                            <a id="selection-pin-btn"><span class="material-icons-round">push_pin</span> Pin Sticker</a>
                         </div>
                     </div>
                 </div>
@@ -322,7 +358,6 @@
         <div id="input-area">
             <button id="sticker-btn" class="action-btn"><span class="material-icons-round">emoji_emotions</span></button>
             <button id="attach-btn" class="action-btn"><span class="material-icons-round">attach_file</span></button>
-            <!-- Changed enterkeyhint to "send" for mobile keyboards -->
             <input type="text" id="msg-input" inputmode="text" enterkeyhint="send" placeholder="Type a message..." autocomplete="off" />
             <button id="record-btn" class="action-btn"><span class="material-icons-round">mic</span></button>
             <button id="send-btn" class="action-btn" style="display:none;"><span class="material-icons-round">send</span></button>
@@ -365,6 +400,27 @@
         </div>
     </div>
 
+    <!-- Modals -->
+    
+    <!-- Multi Delete Modal -->
+    <div id="multi-delete-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom:15px;">Delete Messages</h3>
+            <button id="btn-multi-delete-me" class="modal-btn danger">🗑️ Delete for Me</button>
+            <button id="btn-multi-delete-everyone" class="modal-btn danger">🚫 Delete for Everyone</button>
+            <button onclick="closeModal('multi-delete-modal')" class="modal-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Forward Modal -->
+    <div id="forward-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom:15px;">Forward to...</h3>
+            <div id="forward-contacts-list" style="max-height: 250px; overflow-y:auto; text-align:left; border:1px solid var(--border-color); border-radius:8px; margin-bottom:10px;"></div>
+            <button onclick="closeModal('forward-modal')" class="modal-btn">Cancel</button>
+        </div>
+    </div>
+
     <!-- Profile Settings -->
     <div id="user-settings-modal" class="modal"> 
         <div class="modal-content"> 
@@ -382,23 +438,6 @@
             </div>
             <button id="save-settings-btn" class="btn-primary">Save Profile</button> 
             <button onclick="closeModal('user-settings-modal')" class="modal-btn">Cancel</button> 
-        </div> 
-    </div>
-    
-    <!-- Message Options (Copy / Delete Handlers Fixed) -->
-    <div id="msg-options-modal" class="modal"> 
-        <div class="modal-content"> 
-            <h3>Message Options</h3> 
-            <div id="reaction-picker" style="font-size: 24px; display:flex; justify-content:center; gap:10px; margin: 15px 0; cursor:pointer;">
-                <span onclick="addReaction('❤️')">❤️</span> <span onclick="addReaction('👍')">👍</span> <span onclick="addReaction('😂')">😂</span> <span onclick="addReaction('😮')">😮</span> <span onclick="addReaction('😢')">😢</span> <span onclick="addReaction('🙏')">🙏</span>
-            </div>
-            <button id="btn-pin-sticker" class="modal-btn success" style="display:none;">📌 Pin as Custom Sticker</button>
-            <button id="btn-reply-msg" class="modal-btn">↩️ Reply</button>
-            <button id="btn-edit-msg" class="modal-btn" style="display:none;">✏️ Edit</button>
-            <button id="btn-copy-msg" class="modal-btn">📋 Copy Text</button>
-            <button id="btn-delete-me" class="modal-btn danger">🗑️ Delete for Me</button>
-            <button id="btn-delete-everyone" class="modal-btn danger" style="display:none;">🚫 Delete for Everyone</button> 
-            <button onclick="closeModal('msg-options-modal')" class="modal-btn">Cancel</button> 
         </div> 
     </div>
 
@@ -439,13 +478,15 @@
         let chatOpen = document.getElementById('chat-screen').classList.contains('active');
         
         if (callOpen) {
-            // Cannot exit via back button during call
+            // Cannot easily back out of a live call
         } else if (mediaViewer) {
             document.getElementById("close-viewer-btn").click();
         } else if (advEditor) {
             window.closeAdvEditor();
         } else if (activeModal) {
             activeModal.style.display = 'none';
+        } else if (isSelectionMode) {
+            window.exitSelectionMode();
         } else if (chatOpen) {
             document.getElementById("back-btn").click();
         }
@@ -466,7 +507,11 @@
     let loginTime = Date.now(); let notifiedMsgs = new Set(); let myChatMutes = {}; let myChatSettings = {}; 
     let isRecipientOnline = false;
 
-    let selectedMsgId = null; let selectedMsgData = null; let replyingToMsg = null;
+    // Multi-Selection State
+    let isSelectionMode = false;
+    let selectedMsgIds = new Set();
+    let selectedMsgDataMap = new Map();
+    let replyingToMsg = null;
     let isDarkMode = localStorage.getItem('theme') === 'dark';
 
     const SYSTEM_PASSWORD = "03009";
@@ -481,7 +526,6 @@
     const ringtone = document.getElementById("ringtone-audio");
     const msgTone = document.getElementById("msg-tone");
 
-    // Init Theme
     if (isDarkMode) document.body.classList.add('dark-mode');
     document.getElementById("btn-toggle-theme").onclick = () => {
         isDarkMode = !isDarkMode;
@@ -491,7 +535,6 @@
 
     function formatTime12H(timestamp) { if(!timestamp) return ""; return new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }); }
     
-    // Rich Text Formatting
     function formatRichText(text) {
         if(!text) return "";
         let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -535,9 +578,13 @@
     };
     window.closeModal = id => document.getElementById(id).style.display = 'none';
     
-    // UI Toggles
     document.getElementById("main-menu-dots").onclick = () => document.getElementById("main-menu-dropdown").classList.toggle("show");
     document.getElementById("chat-menu-dots").onclick = () => document.getElementById("chat-menu-dropdown").classList.toggle("show");
+    
+    document.getElementById("selection-menu-dots").onclick = () => {
+        document.getElementById("selection-menu-dropdown").classList.toggle("show");
+    };
+
     document.getElementById("attach-btn").onclick = () => {
         let menu = document.getElementById("attachment-menu");
         menu.style.display = menu.style.display === "flex" ? "none" : "flex";
@@ -552,6 +599,7 @@
     window.onclick = e => { 
         if (!e.target.closest('#main-menu-dots') && !e.target.closest('#main-menu-dropdown')) document.getElementById("main-menu-dropdown").classList.remove('show'); 
         if (!e.target.closest('#chat-menu-dots') && !e.target.closest('#chat-menu-dropdown')) document.getElementById("chat-menu-dropdown").classList.remove('show'); 
+        if (!e.target.closest('#selection-menu-dots') && !e.target.closest('#selection-menu-dropdown')) document.getElementById("selection-menu-dropdown").classList.remove('show'); 
         if (!e.target.closest('#attach-btn') && !e.target.closest('#attachment-menu')) document.getElementById("attachment-menu").style.display = "none";
         if (!e.target.closest('#sticker-btn') && !e.target.closest('#sticker-menu') && !e.target.closest('.msg-sticker')) document.getElementById("sticker-menu").style.display = "none";
     };
@@ -609,11 +657,11 @@
         showScreen("dashboard-screen"); 
         loadChatList(); 
         loadCallHistory();
-        initStickers(); // Load Stickers
+        initStickers(); 
     }
 
-    // --- Media Viewer ---
     window.openMediaViewer = (url, type, fileName) => {
+        if(isSelectionMode) return;
         const viewerContent = document.getElementById("viewer-content");
         if(type === 'video') {
             viewerContent.innerHTML = `<video controls autoplay playsinline src="${url}" style="max-width:100%; max-height:100%; outline:none; border-radius:10px;"></video>`;
@@ -641,7 +689,7 @@
         document.getElementById("media-viewer").style.display = "none";
     };
 
-    // --- Stickers Setup ---
+    // --- ENHANCED STICKER BUNDLE ---
     function initStickers() {
         const defaultStickers = [
             "https://cdn-icons-png.flaticon.com/512/4860/4860840.png",
@@ -651,7 +699,13 @@
             "https://cdn-icons-png.flaticon.com/512/4860/4860826.png",
             "https://cdn-icons-png.flaticon.com/512/4860/4860838.png",
             "https://cdn-icons-png.flaticon.com/512/4860/4860807.png",
-            "https://cdn-icons-png.flaticon.com/512/4860/4860790.png"
+            "https://cdn-icons-png.flaticon.com/512/4860/4860790.png",
+            "https://cdn-icons-png.flaticon.com/512/2613/2613280.png",
+            "https://cdn-icons-png.flaticon.com/512/2613/2613283.png",
+            "https://cdn-icons-png.flaticon.com/512/2613/2613295.png",
+            "https://cdn-icons-png.flaticon.com/512/2613/2613309.png",
+            "https://cdn-icons-png.flaticon.com/512/2613/2613328.png",
+            "https://cdn-icons-png.flaticon.com/512/2613/2613251.png"
         ];
         
         let defaultGrid = document.getElementById("default-sticker-grid");
@@ -850,6 +904,7 @@
     }
 
     document.getElementById("chat-info-area").onclick = async () => {
+        if (isSelectionMode) return;
         if(isGroupChat) {
             let snap = await get(child(dbRef(db), `Groups/${currentRoomId}`)); if(!snap.exists()) return; let g = snap.val();
             document.getElementById("group-settings-name").innerText = g.name; document.getElementById("group-settings-modal").style.display = "flex";
@@ -878,7 +933,7 @@
         document.getElementById("header-call-btn").style.display = isP2P ? "block" : "none";
         document.getElementById("header-video-call-btn").style.display = isP2P ? "block" : "none";
         
-        cancelReply(); 
+        cancelReply(); window.exitSelectionMode();
         if (currentRoomId) set(dbRef(db, `Users/${currentUser}/chatSettings/${currentRoomId}/unread`), 0);
         
         onValue(dbRef(db, `Users/${currentUser}/chatSettings/${currentRoomId}/clearedAt`), snap => { chatClearedAt = snap.exists() ? snap.val() : 0; loadMessages(); });
@@ -924,7 +979,6 @@
     msgInput.addEventListener('keyup', checkSendBtnState);
     msgInput.addEventListener('change', checkSendBtnState);
     
-    // Prevent default on Enter to stop keyboard from closing when submitting
     msgInput.addEventListener('keydown', (e) => {
         if(e.key === 'Enter') {
             e.preventDefault(); 
@@ -932,7 +986,6 @@
         }
     });
 
-    // Prevent default on pointer down so focus is NOT lost and keyboard STAYS UP!
     document.getElementById("send-btn").addEventListener("pointerdown", e => e.preventDefault());
     document.getElementById("record-btn").addEventListener("pointerdown", e => e.preventDefault());
 
@@ -961,10 +1014,10 @@
         msgInput.value = ""; 
         checkSendBtnState();
         await handleSendMsg('text', t); 
-        msgInput.focus(); // Ensure focus returns immediately just in case
+        msgInput.focus();
     };
 
-    // --- TRUE ADVANCED MEDIA EDITOR (WhatsApp Style) ---
+    // --- TRUE ADVANCED MEDIA EDITOR & CONTINUOUS DRAWING ---
     let pendingMediaFiles = [];
     let currentMediaIndex = 0;
     let advDrawColor = '#FF5252';
@@ -1000,23 +1053,21 @@
         
         let current = pendingMediaFiles[currentMediaIndex];
         
-        // Show/Hide draw tool depending on type
         document.getElementById("adv-draw-btn").style.display = (current.type === 'image') ? "block" : "none";
         document.getElementById("adv-color-picker").style.display = "none";
         isDrawingEnabled = false;
+        document.getElementById("adv-draw-btn").style.color = "white";
 
-        // Main preview
         if (current.type === 'video') {
             container.innerHTML = `<video src="${current.objUrl}" controls style="max-width:100%; max-height:100%;"></video>`;
         } else {
-            // Setup Canvas for Image
             let canvas = document.createElement("canvas");
             canvas.id = "adv-canvas";
+            canvas.style.touchAction = "none"; // Fixes continuous draw on mobile
             container.appendChild(canvas);
             setupDrawingCanvas(current);
         }
 
-        // Thumbnails
         pendingMediaFiles.forEach((m, idx) => {
             let thumb = document.createElement('div');
             thumb.style.width = '60px'; thumb.style.height = '60px';
@@ -1038,7 +1089,6 @@
         const img = new Image();
         
         img.onload = () => {
-            // Calculate sizes keeping aspect ratio inside window bounds
             let ratio = img.width / img.height;
             let maxWidth = window.innerWidth;
             let maxHeight = window.innerHeight - 150; 
@@ -1049,7 +1099,6 @@
             
             canvas.width = width; canvas.height = height;
             
-            // If we already edited it, load the edited version, otherwise the original image
             if (currentMedia.editedUrl) {
                 let editedImg = new Image();
                 editedImg.onload = () => ctx.drawImage(editedImg, 0, 0, width, height);
@@ -1060,7 +1109,7 @@
         };
         img.src = currentMedia.objUrl;
 
-        // Drawing events
+        // Continuous Path Drawing Logic
         canvas.onpointerdown = (e) => {
             if(!isDrawingEnabled) return;
             isDrawing = true;
@@ -1073,9 +1122,13 @@
             let rect = canvas.getBoundingClientRect();
             ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
             ctx.strokeStyle = advDrawColor;
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 5;
             ctx.lineCap = "round";
+            ctx.lineJoin = "round";
             ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
         };
         canvas.onpointerup = () => isDrawing = false;
         canvas.onpointerout = () => isDrawing = false;
@@ -1084,7 +1137,7 @@
     function saveCurrentCanvas() {
         let canvas = document.getElementById("adv-canvas");
         if(canvas && pendingMediaFiles[currentMediaIndex].type === 'image') {
-            pendingMediaFiles[currentMediaIndex].editedUrl = canvas.toDataURL("image/jpeg");
+            pendingMediaFiles[currentMediaIndex].editedUrl = canvas.toDataURL("image/jpeg", 0.9);
         }
     }
 
@@ -1108,7 +1161,7 @@
     });
 
     document.getElementById("adv-media-send").onclick = async () => {
-        saveCurrentCanvas(); // Ensure last drawings are saved before sending
+        saveCurrentCanvas(); 
         let filesToUpload = pendingMediaFiles;
         closeAdvEditor();
         for (let m of filesToUpload) {
@@ -1145,7 +1198,6 @@
 
     document.getElementById("file-upload-doc").onchange = e => { handleCloudinaryUpload(e.target.files[0], 'document'); e.target.value = ''; };
 
-    // Voice Note Recorder (Audio Settings)
     let mediaRec; let audioChunks = [];
     document.getElementById("record-btn").onclick = async (e) => { 
         let btn = e.target.closest('button'); 
@@ -1170,8 +1222,57 @@
         } 
     };
 
-    window.markAudioPlayed = (roomId, msgId) => {
-        update(dbRef(db, `Chats/${roomId}/${msgId}`), { played: true });
+    window.markAudioPlayed = (roomId, msgId) => { update(dbRef(db, `Chats/${roomId}/${msgId}`), { played: true }); };
+
+    // --- MULTI SELECTION LOGIC ---
+    function toggleSelection(id, div, data, isMe) {
+        if (selectedMsgIds.has(id)) {
+            selectedMsgIds.delete(id);
+            selectedMsgDataMap.delete(id);
+            div.classList.remove('selected-msg');
+        } else {
+            selectedMsgIds.add(id);
+            selectedMsgDataMap.set(id, {data, isMe});
+            div.classList.add('selected-msg');
+        }
+        
+        let count = selectedMsgIds.size;
+        if (count === 0) { window.exitSelectionMode(); return; }
+        
+        document.getElementById('selection-count').innerText = count;
+        
+        if (count === 1) {
+            document.getElementById('selection-emojis').style.display = 'flex';
+            document.getElementById('selection-reply-btn').style.display = 'flex';
+            
+            let singleId = Array.from(selectedMsgIds)[0];
+            let singleItem = selectedMsgDataMap.get(singleId);
+            
+            if (singleItem.isMe && singleItem.data.type === 'text') {
+                document.getElementById('selection-edit-btn').style.display = 'flex';
+            } else { document.getElementById('selection-edit-btn').style.display = 'none'; }
+            
+            if (singleItem.data.type === 'image' || singleItem.data.type === 'sticker') {
+                document.getElementById('selection-pin-btn').style.display = 'flex';
+            } else { document.getElementById('selection-pin-btn').style.display = 'none'; }
+        } else {
+            document.getElementById('selection-emojis').style.display = 'none';
+            document.getElementById('selection-reply-btn').style.display = 'none';
+            document.getElementById('selection-edit-btn').style.display = 'none';
+            document.getElementById('selection-pin-btn').style.display = 'none';
+        }
+        
+        let allMine = true;
+        selectedMsgDataMap.forEach((val) => { if(!val.isMe) allMine = false; });
+        document.getElementById("btn-multi-delete-everyone").style.display = allMine ? 'block' : 'none';
+    }
+
+    window.exitSelectionMode = () => {
+        isSelectionMode = false;
+        selectedMsgIds.clear(); selectedMsgDataMap.clear();
+        document.querySelectorAll('.selected-msg').forEach(el => el.classList.remove('selected-msg'));
+        document.getElementById('normal-chat-header').style.display = 'flex';
+        document.getElementById('selection-chat-header').style.display = 'none';
     };
 
     function loadMessages() { 
@@ -1194,17 +1295,33 @@
                 
                 let div = document.createElement("div"); 
                 div.className = `message ${isMe ? 'sent' : 'received'}`; 
+                if (selectedMsgIds.has(childNode.key)) div.classList.add('selected-msg');
                 if(m.type === 'sticker') { div.style.background = 'transparent'; div.style.boxShadow = 'none'; div.style.padding = '0'; }
 
                 let pressTimer;
-                const startPress = () => pressTimer = setTimeout(() => window.openMsgOptions(childNode.key, m, isMe), 500);
+                const startPress = () => pressTimer = setTimeout(() => {
+                    if (m.deletedForEveryone) return;
+                    if (!isSelectionMode) {
+                        isSelectionMode = true;
+                        document.getElementById('normal-chat-header').style.display = 'none';
+                        document.getElementById('selection-chat-header').style.display = 'flex';
+                        toggleSelection(childNode.key, div, m, isMe);
+                    }
+                }, 500);
+
                 div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', () => clearTimeout(pressTimer)); div.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-                div.oncontextmenu = (e) => { e.preventDefault(); window.openMsgOptions(childNode.key, m, isMe); };
+                div.oncontextmenu = (e) => { 
+                    e.preventDefault(); 
+                    if (!isSelectionMode && !m.deletedForEveryone) { 
+                        isSelectionMode = true;
+                        document.getElementById('normal-chat-header').style.display = 'none';
+                        document.getElementById('selection-chat-header').style.display = 'flex';
+                        toggleSelection(childNode.key, div, m, isMe);
+                    }
+                };
                 
                 let startX = 0, startY = 0;
-                div.addEventListener('touchstart', e => { 
-                    startPress(); startX = e.touches[0].clientX; startY = e.touches[0].clientY; div.style.transition = 'none'; 
-                }, {passive: true});
+                div.addEventListener('touchstart', e => { startPress(); startX = e.touches[0].clientX; startY = e.touches[0].clientY; div.style.transition = 'none'; }, {passive: true});
                 div.addEventListener('touchmove', e => { 
                     let dX = e.touches[0].clientX - startX; let dY = e.touches[0].clientY - startY; 
                     if(dX > 0 && Math.abs(dX) > Math.abs(dY)) { clearTimeout(pressTimer); if(e.cancelable) e.preventDefault(); div.style.transform = `translateX(${Math.min(dX, 60)}px)`; } 
@@ -1212,7 +1329,7 @@
                 div.addEventListener('touchend', e => { 
                     clearTimeout(pressTimer); div.style.transition = 'transform 0.2s'; div.style.transform = 'translateX(0)'; 
                     let dX = e.changedTouches[0].clientX - startX; let dY = e.changedTouches[0].clientY - startY;
-                    if(dX > 50 && dX > Math.abs(dY)) { 
+                    if(dX > 50 && dX > Math.abs(dY) && !isSelectionMode) { 
                         replyingToMsg = { senderName: m.senderName, text: m.type === 'text' ? m.text : `📎 ${m.type}` };
                         document.getElementById("reply-sender").innerText = replyingToMsg.senderName;
                         document.getElementById("reply-text").innerText = replyingToMsg.text;
@@ -1220,6 +1337,13 @@
                         document.getElementById("msg-input").focus();
                     } 
                 });
+
+                div.onclick = (e) => {
+                    if (isSelectionMode && !m.deletedForEveryone) {
+                        e.preventDefault(); e.stopPropagation();
+                        toggleSelection(childNode.key, div, m, isMe);
+                    }
+                };
                 
                 let tick = isMe && chatType === '1to1' ? (m.read && myProfile.readReceipts ? '<span style="color:#34B7F1;">✓✓</span>' : '<span>✓</span>') : '';
                 
@@ -1231,10 +1355,12 @@
                     let content = "";
                     let captionHtml = m.caption ? `<div style="margin-top:5px; font-size:14px; color:var(--text-main);">${formatRichText(m.caption)}</div>` : '';
                     
+                    let mediaClick = `onclick="if(!isSelectionMode) openMediaViewer(this.dataset.url, this.dataset.type, this.dataset.name)"`;
+
                     if(m.type === "text") content = formatRichText(m.text) + (m.edited ? '<span style="font-size:10px; font-style:italic; margin-left:5px;">(edited)</span>' : '');
-                    else if(m.type === "image") content = `<img src="${m.url}" class="msg-media" onclick="openMediaViewer('${m.url}', 'image', '${m.fileName || 'Image'}')">${captionHtml}`;
-                    else if(m.type === "video") content = `<video src="${m.url}" class="msg-video" onclick="openMediaViewer('${m.url}', 'video', '${m.fileName || 'Video'}')"></video>${captionHtml}`;
-                    else if(m.type === "sticker") content = `<img src="${m.url}" class="msg-sticker" onclick="openMediaViewer('${m.url}', 'image', 'Sticker')">`;
+                    else if(m.type === "image") content = `<img src="${m.url}" data-url="${m.url}" data-type="image" data-name="${m.fileName||'Image'}" class="msg-media" ${mediaClick}>${captionHtml}`;
+                    else if(m.type === "video") content = `<video src="${m.url}" data-url="${m.url}" data-type="video" data-name="${m.fileName||'Video'}" class="msg-video" ${mediaClick}></video>${captionHtml}`;
+                    else if(m.type === "sticker") content = `<img src="${m.url}" data-url="${m.url}" data-type="image" data-name="Sticker" class="msg-sticker" ${mediaClick}>`;
                     else if(m.type === "audio") {
                         let micColor = m.played ? '#34B7F1' : 'var(--text-muted)';
                         let playTrigger = !isMe ? `onplay="markAudioPlayed('${currentRoomId}', '${childNode.key}')"` : '';
@@ -1262,69 +1388,114 @@
         }); 
     }
 
-    // --- WORKING MESSAGE OPTIONS LOGIC (Copy/Delete) ---
-    window.openMsgOptions = (id, data, isMe) => {
-        selectedMsgId = id; selectedMsgData = data;
-        if (data.deletedForEveryone) return;
-        document.getElementById("btn-copy-msg").style.display = data.type === 'text' ? 'block' : 'none';
-        document.getElementById("btn-edit-msg").style.display = (isMe && data.type === 'text') ? 'block' : 'none';
-        document.getElementById("btn-delete-everyone").style.display = isMe ? 'block' : 'none';
-        document.getElementById("btn-pin-sticker").style.display = (data.type === 'image' || data.type === 'sticker') ? 'block' : 'none';
-        document.getElementById("msg-options-modal").style.display = "flex";
-    };
-
+    // MULTI-ACTION HANDLERS
     window.addReaction = async (emoji) => {
-        if(selectedMsgId) { await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}/reactions`), { [currentUser]: emoji }); closeModal("msg-options-modal"); }
-    };
-
-    document.getElementById("btn-pin-sticker").onclick = async () => {
-        if(selectedMsgData && (selectedMsgData.type === 'image' || selectedMsgData.type === 'sticker')) {
-            await push(dbRef(db, `Users/${currentUser}/customStickers`), selectedMsgData.url);
-            alert("Saved to Pinned Stickers! ✨");
+        if (selectedMsgIds.size === 1) {
+            let id = Array.from(selectedMsgIds)[0];
+            await update(dbRef(db, `Chats/${currentRoomId}/${id}/reactions`), { [currentUser]: emoji });
+            window.exitSelectionMode();
         }
-        closeModal("msg-options-modal");
     };
 
-    document.getElementById("btn-reply-msg").onclick = () => {
-        replyingToMsg = { senderName: selectedMsgData.senderName, text: selectedMsgData.type === 'text' ? selectedMsgData.text : `📎 ${selectedMsgData.type}` };
-        document.getElementById("reply-sender").innerText = replyingToMsg.senderName;
-        document.getElementById("reply-text").innerText = replyingToMsg.text;
-        document.getElementById("replying-to-container").style.display = "block";
-        closeModal("msg-options-modal"); document.getElementById("msg-input").focus();
+    document.getElementById("selection-copy-btn").onclick = () => {
+        let texts = [];
+        selectedMsgDataMap.forEach(val => { if (val.data.type === 'text') texts.push(val.data.text); });
+        if(texts.length > 0) {
+            navigator.clipboard.writeText(texts.join("\n")).then(() => alert("Messages Copied!"));
+        }
+        window.exitSelectionMode();
     };
 
+    document.getElementById("selection-delete-btn").onclick = () => {
+        let allMine = true;
+        selectedMsgDataMap.forEach(val => { if(!val.isMe) allMine = false; });
+        document.getElementById("btn-multi-delete-everyone").style.display = allMine ? 'block' : 'none';
+        document.getElementById("multi-delete-modal").style.display = "flex";
+    };
+
+    document.getElementById("btn-multi-delete-me").onclick = async () => {
+        for (let id of selectedMsgIds) {
+            await update(dbRef(db, `Chats/${currentRoomId}/${id}/deletedFor`), { [currentUser]: true });
+        }
+        closeModal("multi-delete-modal");
+        window.exitSelectionMode();
+    };
+
+    document.getElementById("btn-multi-delete-everyone").onclick = async () => {
+        for (let id of selectedMsgIds) {
+            await update(dbRef(db, `Chats/${currentRoomId}/${id}`), { deletedForEveryone: true, text: "", url: "", type: "deleted" });
+        }
+        closeModal("multi-delete-modal");
+        window.exitSelectionMode();
+    };
+
+    document.getElementById("selection-forward-btn").onclick = async () => {
+        const list = document.getElementById("forward-contacts-list");
+        list.innerHTML = "Loading...";
+        let snap = await get(child(dbRef(db), `Users/${currentUser}/contacts`));
+        if (snap.exists()) {
+            list.innerHTML = "";
+            for(let c of Object.keys(snap.val())) { 
+                let u = await get(child(dbRef(db), `Users/${c}`)); 
+                let dN = u.val()?.displayName || c; 
+                list.insertAdjacentHTML('beforeend', `<div onclick="forwardTo('${c}')" style="padding:15px; border-bottom:1px solid var(--border-color); cursor:pointer;">👤 ${dN}</div>`);
+            }
+        }
+        document.getElementById("selection-menu-dropdown").classList.remove('show');
+        document.getElementById("forward-modal").style.display = "flex";
+    };
+
+    window.forwardTo = async (targetUserId) => {
+        let targetRoom = [currentUser, targetUserId].sort().join("_");
+        for (let id of selectedMsgIds) {
+            let mData = selectedMsgDataMap.get(id).data;
+            let msgObj = { sender: currentUser, senderName: myProfile.name, type: mData.type, timestamp: serverTimestamp(), deletedForEveryone: false, read: false }; 
+            if(mData.type === 'text') msgObj.text = mData.text; else msgObj.url = mData.url;
+            if(mData.caption) msgObj.caption = mData.caption;
+            await push(dbRef(db, `Chats/${targetRoom}`), msgObj); 
+        }
+        closeModal("forward-modal"); window.exitSelectionMode(); alert("Forwarded successfully!");
+    };
+
+    document.getElementById("selection-reply-btn").onclick = () => {
+        if(selectedMsgIds.size === 1) {
+            let id = Array.from(selectedMsgIds)[0];
+            let mData = selectedMsgDataMap.get(id).data;
+            replyingToMsg = { senderName: mData.senderName, text: mData.type === 'text' ? mData.text : `📎 ${mData.type}` };
+            document.getElementById("reply-sender").innerText = replyingToMsg.senderName;
+            document.getElementById("reply-text").innerText = replyingToMsg.text;
+            document.getElementById("replying-to-container").style.display = "block";
+            window.exitSelectionMode();
+            document.getElementById("msg-input").focus();
+        }
+    };
+
+    document.getElementById("selection-edit-btn").onclick = async () => {
+        if(selectedMsgIds.size === 1) {
+            let id = Array.from(selectedMsgIds)[0];
+            let mData = selectedMsgDataMap.get(id).data;
+            let newTxt = prompt("Edit Message:", mData.text);
+            if(newTxt !== null && newTxt.trim() !== "") { 
+                await update(dbRef(db, `Chats/${currentRoomId}/${id}`), { text: newTxt.trim(), edited: true }); 
+            }
+            window.exitSelectionMode();
+        }
+    };
+
+    document.getElementById("selection-pin-btn").onclick = async () => {
+        if(selectedMsgIds.size === 1) {
+            let id = Array.from(selectedMsgIds)[0];
+            let mData = selectedMsgDataMap.get(id).data;
+            await push(dbRef(db, `Users/${currentUser}/customStickers`), mData.url);
+            alert("Saved to Pinned Stickers! ✨");
+            window.exitSelectionMode();
+        }
+    };
+    
+    // --- Cancel Reply ---
     window.cancelReply = () => { replyingToMsg = null; document.getElementById("replying-to-container").style.display = "none"; };
 
-    document.getElementById("btn-edit-msg").onclick = async () => {
-        let newTxt = prompt("Edit Message:", selectedMsgData.text);
-        if(newTxt !== null && newTxt.trim() !== "") { await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}`), { text: newTxt.trim(), edited: true }); }
-        closeModal("msg-options-modal");
-    };
-
-    // COPY LOGIC ADDED HERE
-    document.getElementById("btn-copy-msg").onclick = () => {
-        if(selectedMsgData && selectedMsgData.text) {
-            navigator.clipboard.writeText(selectedMsgData.text).then(() => {
-                alert("Copied to clipboard!");
-            });
-        }
-        closeModal("msg-options-modal");
-    };
-
-    // DELETE FOR ME LOGIC ADDED HERE
-    document.getElementById("btn-delete-me").onclick = async () => {
-        if(selectedMsgId) {
-            await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}/deletedFor`), { [currentUser]: true });
-        }
-        closeModal("msg-options-modal");
-    };
-
-    document.getElementById("btn-delete-everyone").onclick = async () => { 
-        if(selectedMsgId) await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}`), { deletedForEveryone: true, text: "", url: "", type: "deleted" }); 
-        closeModal("msg-options-modal"); 
-    };
-
-    // --- WebRTC Video Call Setup ---
+    // --- ENHANCED AUDIO TO VIDEO CALL SWAP LOGIC ---
     const localVidEle = document.getElementById("local-video");
     const remoteVidEle = document.getElementById("remote-video");
     let isDraggingVid = false, dragStartX, dragStartY, initialVidX, initialVidY, dragMoved = false;
@@ -1386,6 +1557,7 @@
     document.getElementById("header-call-btn").onclick = () => startCall(false); 
     document.getElementById("header-video-call-btn").onclick = () => startCall(true); 
     document.getElementById("btn-end-call").onclick = endCall;
+
     document.getElementById("btn-mute-call").onclick = () => {
         if(localStream) {
             isMuted = !isMuted; localStream.getAudioTracks()[0].enabled = !isMuted;
@@ -1394,8 +1566,11 @@
             btn.style.backgroundColor = isMuted ? "var(--danger)" : "rgba(255,255,255,0.25)";
         }
     };
-    document.getElementById("btn-mute-video").onclick = () => {
+
+    // MAGIC AUDIO-TO-VIDEO SWAP
+    document.getElementById("btn-mute-video").onclick = async () => {
         if(localStream && isVideoCall) {
+            // Already Video Call -> Standard Mute
             let vTrack = localStream.getVideoTracks()[0];
             if(vTrack) {
                 isVideoMuted = !isVideoMuted; vTrack.enabled = !isVideoMuted;
@@ -1403,8 +1578,38 @@
                 btn.innerHTML = isVideoMuted ? '<span class="material-icons-round">videocam_off</span>' : '<span class="material-icons-round">videocam</span>';
                 btn.style.backgroundColor = isVideoMuted ? "var(--danger)" : "rgba(255,255,255,0.25)";
             }
+        } else if (localStream && !isVideoCall) {
+            // Upgrade Audio to Video Call
+            try {
+                let vStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
+                let vTrack = vStream.getVideoTracks()[0];
+                
+                localStream.addTrack(vTrack);
+                pc.addTrack(vTrack, localStream);
+                
+                isVideoCall = true; isVideoMuted = false;
+                localVidEle.srcObject = localStream; localVidEle.style.display = "block";
+                
+                document.getElementById("btn-switch-camera").style.display = "flex";
+                document.getElementById("btn-beauty-filter").style.display = "flex";
+                
+                let btn = document.getElementById("btn-mute-video");
+                btn.innerHTML = '<span class="material-icons-round">videocam</span>';
+                btn.style.backgroundColor = "rgba(255,255,255,0.25)";
+                
+                updateVideoClasses();
+
+                // Start Renegotiation manually
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                await update(dbRef(db, `Calls/${callRoomId}`), { 
+                    renegotiationOffer: { type: offer.type, sdp: offer.sdp },
+                    updateStamp: Date.now() 
+                });
+            } catch(e) { alert("Camera Access Denied!"); }
         }
     };
+
     document.getElementById("btn-beauty-filter").onclick = () => {
         if(isVideoCall) {
             isBeautyOn = !isBeautyOn;
@@ -1453,6 +1658,25 @@
         });
     }
 
+    // Call Renegotiation Listeners
+    function setupRenegotiationListeners() {
+        onValue(dbRef(db, `Calls/${callRoomId}/renegotiationOffer`), async snap => {
+            if(snap.exists() && pc && pc.signalingState !== 'closed') {
+                await pc.setRemoteDescription(new RTCSessionDescription(snap.val()));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                await update(dbRef(db, `Calls/${callRoomId}`), { renegotiationAnswer: { type: answer.type, sdp: answer.sdp } });
+            }
+        });
+        onValue(dbRef(db, `Calls/${callRoomId}/renegotiationAnswer`), async snap => {
+            if(snap.exists() && pc && pc.signalingState !== 'closed') {
+                if (pc.signalingState === 'have-local-offer') {
+                    await pc.setRemoteDescription(new RTCSessionDescription(snap.val()));
+                }
+            }
+        });
+    }
+
     async function startCall(videoEnabled) {
         try {
             callRoomId = currentRoomId; let calleeId = currentRoomId.split("_").find(id => id !== currentUser);
@@ -1464,23 +1688,40 @@
             document.getElementById("btn-mute-call").style.display = "flex"; isMuted = false;
             document.getElementById("btn-mute-call").innerHTML = '<span class="material-icons-round">mic</span>'; document.getElementById("btn-mute-call").style.backgroundColor = "rgba(255,255,255,0.25)";
             
+            document.getElementById("btn-mute-video").style.display = "flex";
             if (isVideoCall) {
                 isVideoMuted = false; 
-                document.getElementById("btn-mute-video").style.display = "flex"; document.getElementById("btn-switch-camera").style.display = "flex"; document.getElementById("btn-beauty-filter").style.display = "flex";
+                document.getElementById("btn-switch-camera").style.display = "flex"; document.getElementById("btn-beauty-filter").style.display = "flex";
                 document.getElementById("btn-mute-video").innerHTML = '<span class="material-icons-round">videocam</span>'; document.getElementById("btn-mute-video").style.backgroundColor = "rgba(255,255,255,0.25)";
                 document.getElementById("btn-beauty-filter").style.color = "white"; document.getElementById("btn-beauty-filter").style.backgroundColor = "rgba(255,255,255,0.25)";
+            } else {
+                document.getElementById("btn-mute-video").innerHTML = '<span class="material-icons-round">videocam_off</span>'; document.getElementById("btn-mute-video").style.backgroundColor = "var(--danger)";
             }
 
             localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: isVideoCall ? { facingMode: currentFacingMode } : false }); 
             if (isVideoCall) { localVidEle.srcObject = localStream; localVidEle.style.display = "block"; updateVideoClasses(); }
             
             pc = new RTCPeerConnection(servers); localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            pc.ontrack = e => { if (e.streams && e.streams[0]) { let r = document.getElementById(isVideoCall ? "remote-video" : "remote-audio"); r.srcObject = e.streams[0]; r.style.display = isVideoCall ? "block" : "none"; } };
+            
+            pc.ontrack = e => { 
+                if (e.streams && e.streams[0]) { 
+                    if(e.track.kind === 'video') {
+                        let r = document.getElementById("remote-video"); r.srcObject = e.streams[0]; r.style.display = "block";
+                        isVideoCall = true; updateVideoClasses(); document.getElementById("call-ui-elements").style.display = "none";
+                        document.getElementById("btn-mute-video").innerHTML = '<span class="material-icons-round">videocam</span>'; document.getElementById("btn-mute-video").style.backgroundColor = "rgba(255,255,255,0.25)";
+                    } else {
+                        let r = document.getElementById("remote-audio"); r.srcObject = e.streams[0]; r.style.display = "block"; 
+                    }
+                } 
+            };
+            
             pc.onicecandidate = e => { if(e.candidate) push(dbRef(db, `Calls/${callRoomId}/callerCandidates`), e.candidate.toJSON()); };
 
             const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
             await set(dbRef(db, `Calls/${callRoomId}`), { status: 'ringing' });
             await set(dbRef(db, `Users/${calleeId}/incomingCall`), { roomId: callRoomId, caller: currentUser, callerName: myProfile.name, callerDp: myProfile.dp, isVideoCall: isVideoCall, status: 'ringing', offer: { type: offer.type, sdp: offer.sdp } });
+
+            setupRenegotiationListeners();
 
             onValue(dbRef(db, `Calls/${callRoomId}/answer`), async snap => { if(snap.exists() && pc.signalingState !== 'closed') { if (!pc.currentRemoteDescription) { await pc.setRemoteDescription(new RTCSessionDescription(snap.val())); if(!callTimerInterval) startCallTimer(); } } });
             onChildAdded(dbRef(db, `Calls/${callRoomId}/calleeCandidates`), snap => { if(snap.exists() && pc.signalingState !== 'closed') pc.addIceCandidate(new RTCIceCandidate(snap.val())); });
@@ -1494,18 +1735,33 @@
             isVideoCall = videoEnabled; currentFacingMode = "user"; isLocalPiP = true; isBeautyOn = false; dragMoved = false;
             
             document.getElementById("btn-mute-call").style.display = "flex"; isMuted = false; document.getElementById("btn-mute-call").innerHTML = '<span class="material-icons-round">mic</span>'; document.getElementById("btn-mute-call").style.backgroundColor = "rgba(255,255,255,0.25)";
+            
+            document.getElementById("btn-mute-video").style.display = "flex";
             if(isVideoCall) {
                 isVideoMuted = false; 
-                document.getElementById("btn-mute-video").style.display = "flex"; document.getElementById("btn-switch-camera").style.display = "flex"; document.getElementById("btn-beauty-filter").style.display = "flex";
+                document.getElementById("btn-switch-camera").style.display = "flex"; document.getElementById("btn-beauty-filter").style.display = "flex";
                 document.getElementById("btn-mute-video").innerHTML = '<span class="material-icons-round">videocam</span>'; document.getElementById("btn-mute-video").style.backgroundColor = "rgba(255,255,255,0.25)";
                 document.getElementById("btn-beauty-filter").style.color = "white"; document.getElementById("btn-beauty-filter").style.backgroundColor = "rgba(255,255,255,0.25)";
+            } else {
+                document.getElementById("btn-mute-video").innerHTML = '<span class="material-icons-round">videocam_off</span>'; document.getElementById("btn-mute-video").style.backgroundColor = "var(--danger)";
             }
 
             localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: isVideoCall ? { facingMode: currentFacingMode } : false }); 
             if (isVideoCall) { localVidEle.srcObject = localStream; localVidEle.style.display = "block"; updateVideoClasses(); }
 
             pc = new RTCPeerConnection(servers); localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            pc.ontrack = e => { if (e.streams && e.streams[0]) { let r = document.getElementById(isVideoCall ? "remote-video" : "remote-audio"); r.srcObject = e.streams[0]; r.style.display = isVideoCall ? "block" : "none"; } };
+            
+            pc.ontrack = e => { 
+                if (e.streams && e.streams[0]) { 
+                    if(e.track.kind === 'video') {
+                        let r = document.getElementById("remote-video"); r.srcObject = e.streams[0]; r.style.display = "block";
+                        isVideoCall = true; updateVideoClasses(); document.getElementById("call-ui-elements").style.display = "none";
+                        document.getElementById("btn-mute-video").innerHTML = '<span class="material-icons-round">videocam</span>'; document.getElementById("btn-mute-video").style.backgroundColor = "rgba(255,255,255,0.25)";
+                    } else {
+                        let r = document.getElementById("remote-audio"); r.srcObject = e.streams[0]; r.style.display = "block"; 
+                    }
+                } 
+            };
             pc.onicecandidate = e => { if(e.candidate) push(dbRef(db, `Calls/${callRoomId}/calleeCandidates`), e.candidate.toJSON()); };
 
             await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -1515,6 +1771,8 @@
             await update(dbRef(db, `Calls/${callRoomId}`), { status: 'connected' }); await update(dbRef(db, `Users/${currentUser}/incomingCall`), { status: 'answered' });
             
             if(!callTimerInterval) startCallTimer(); if(isVideoCall) document.getElementById("call-ui-elements").style.display = "none"; 
+
+            setupRenegotiationListeners();
 
             onChildAdded(dbRef(db, `Calls/${callRoomId}/callerCandidates`), snap => { if(snap.exists() && pc.signalingState !== 'closed') pc.addIceCandidate(new RTCIceCandidate(snap.val())); });
             onValue(dbRef(db, `Calls/${callRoomId}/status`), snap => { if(snap.val() === 'ended') endCall(); });
