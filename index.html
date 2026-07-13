@@ -11,12 +11,12 @@
             /* Light Theme - Red Colors */
             --bg-color: #fce4e4;
             --app-bg: #ffffff;
-            --header-bg: #B71C1C; /* Dark Red */
+            --header-bg: #B71C1C;
             --header-color: #ffffff;
-            --primary: #D32F2F; /* Main Red */
-            --secondary: #FF5252; /* Light Red */
+            --primary: #D32F2F;
+            --secondary: #FF5252;
             --chat-bg: #fce4e4;
-            --msg-sent: #ffcdd2; /* Light red for sent message */
+            --msg-sent: #ffcdd2;
             --msg-received: #ffffff;
             --text-main: #303030;
             --text-muted: #808080;
@@ -31,7 +31,7 @@
             --app-bg: #1a0505;
             --header-bg: #2b0a0a;
             --header-color: #e9edef;
-            --primary: #ef5350; /* Bright Red for dark mode */
+            --primary: #ef5350;
             --secondary: #ef5350;
             --chat-bg: #0f0202;
             --msg-sent: #4a0f0f;
@@ -141,6 +141,13 @@
         #media-viewer { display: none; background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column; }
         .viewer-header { width: 100%; display: flex; justify-content: space-between; padding: 20px; position: absolute; top: 0; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent); }
 
+        /* Advanced Media Editor */
+        #advanced-media-modal { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background:#000000; z-index: 300; flex-direction: column; }
+        .adv-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; background: rgba(0,0,0,0.4); }
+        .adv-header-icon { font-size: 28px; cursor: pointer; padding: 5px; border-radius: 50%; transition: 0.2s; }
+        .adv-header-icon:hover { background: rgba(255,255,255,0.2); }
+        .adv-color-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; cursor: pointer; margin-left: 10px; }
+
         /* Modern WhatsApp-Style Call UI */
         #call-screen-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 999; overflow: hidden; }
         .call-dp { width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 20px; object-fit: cover; }
@@ -151,21 +158,10 @@
         .btn-accept { background: #34C759; width: 60px; height: 60px; font-size: 28px; }
         .btn-end { background: var(--danger); width: 60px; height: 60px; font-size: 28px; }
         
-        /* Draggable PiP (Picture in Picture) Video */
-        .video-pip {
-            position: absolute; width: 100px; height: 150px; bottom: 120px; right: 20px; 
-            border-radius: 12px; border: 2px solid white; object-fit: cover; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6); z-index: 50; cursor: grab; transition: 0.3s;
-        }
+        .video-pip { position: absolute; width: 100px; height: 150px; bottom: 120px; right: 20px; border-radius: 12px; border: 2px solid white; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.6); z-index: 50; cursor: grab; transition: 0.3s; }
         .video-pip:active { cursor: grabbing; transition: 0s; }
-        
-        /* Full Screen Background Video */
-        .video-fullscreen {
-            position: absolute; width: 100%; height: 100%; top: 0; left: 0; right: auto; bottom: auto;
-            border-radius: 0; border: none; object-fit: cover; z-index: 1; transition: 0.3s;
-        }
+        .video-fullscreen { position: absolute; width: 100%; height: 100%; top: 0; left: 0; right: auto; bottom: auto; border-radius: 0; border: none; object-fit: cover; z-index: 1; transition: 0.3s; }
 
-        /* Call Screen Mirrors & Filters */
         .mirrored { transform: scaleX(-1); }
         .beauty-filter { filter: brightness(1.1) contrast(1.05) saturate(1.2) sepia(0.05) blur(0.3px); }
 
@@ -202,7 +198,7 @@
         </div>
     </div>
 
-    <!-- Media Viewer Screen (Full Screen Image/Video) -->
+    <!-- Media Viewer Screen -->
     <div id="media-viewer" class="screen">
         <div class="viewer-header">
             <span id="close-viewer-btn" class="material-icons-round" style="cursor: pointer; color: white; font-size: 28px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">arrow_back</span>
@@ -303,8 +299,8 @@
             <div class="attach-icon image" onclick="document.getElementById('file-upload-image').click()"><span class="material-icons-round">image</span></div>
             <div class="attach-icon video" onclick="document.getElementById('file-upload-video').click()"><span class="material-icons-round">videocam</span></div>
             <div class="attach-icon doc" onclick="document.getElementById('file-upload-doc').click()"><span class="material-icons-round">insert_drive_file</span></div>
-            <input type="file" id="file-upload-image" accept="image/*" style="display:none;">
-            <input type="file" id="file-upload-video" accept="video/*" style="display:none;">
+            <input type="file" id="file-upload-image" accept="image/*" multiple style="display:none;">
+            <input type="file" id="file-upload-video" accept="video/*" multiple style="display:none;">
             <input type="file" id="file-upload-doc" accept=".pdf,.doc,.docx,.zip,.txt" style="display:none;">
         </div>
 
@@ -316,7 +312,6 @@
             </div>
             <div id="default-sticker-grid" class="sticker-grid" style="display:flex;"></div>
             <div id="custom-sticker-grid" class="sticker-grid" style="display:none;">
-                 <!-- Custom Sticker Upload Button -->
                  <div class="sticker-item" style="display:flex; justify-content:center; align-items:center; background:var(--bg-color); width:70px; height:70px; border-radius:10px; cursor:pointer;" onclick="document.getElementById('custom-sticker-upload').click()">
                      <span class="material-icons-round" style="font-size:32px; color:var(--primary);">add</span>
                  </div>
@@ -327,7 +322,8 @@
         <div id="input-area">
             <button id="sticker-btn" class="action-btn"><span class="material-icons-round">emoji_emotions</span></button>
             <button id="attach-btn" class="action-btn"><span class="material-icons-round">attach_file</span></button>
-            <input type="text" id="msg-input" placeholder="Type a message..." autocomplete="off" />
+            <!-- Changed enterkeyhint to "send" for mobile keyboards -->
+            <input type="text" id="msg-input" inputmode="text" enterkeyhint="send" placeholder="Type a message..." autocomplete="off" />
             <button id="record-btn" class="action-btn"><span class="material-icons-round">mic</span></button>
             <button id="send-btn" class="action-btn" style="display:none;"><span class="material-icons-round">send</span></button>
         </div>
@@ -337,7 +333,38 @@
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Advanced Media Editor Modal (Full Screen WhatsApp Style) -->
+    <div id="advanced-media-modal">
+        <div class="adv-header">
+            <span class="material-icons-round adv-header-icon" onclick="closeAdvEditor()">close</span>
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <span id="adv-delete-btn" class="material-icons-round adv-header-icon" title="Delete Media">delete</span>
+                <span id="adv-draw-btn" class="material-icons-round adv-header-icon" title="Draw">draw</span>
+                <div id="adv-color-picker" style="display:none; align-items:center;">
+                    <div class="adv-color-btn" style="background:#FF5252;" onclick="setDrawColor('#FF5252')"></div>
+                    <div class="adv-color-btn" style="background:#4CAF50;" onclick="setDrawColor('#4CAF50')"></div>
+                    <div class="adv-color-btn" style="background:#2196F3;" onclick="setDrawColor('#2196F3')"></div>
+                    <div class="adv-color-btn" style="background:#FFEB3B;" onclick="setDrawColor('#FFEB3B')"></div>
+                    <div class="adv-color-btn" style="background:#ffffff;" onclick="setDrawColor('#ffffff')"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="adv-media-preview-container" style="flex:1; display:flex; justify-content:center; align-items:center; position:relative; overflow:hidden;">
+            <!-- Canvas dynamically injected here -->
+        </div>
+        
+        <div style="padding: 15px; background: rgba(0,0,0,0.7); display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="text" id="adv-media-caption" placeholder="Add a caption..." style="flex:1; padding:12px; border-radius:20px; border:none; outline:none; background:#222; color:white;">
+                <button id="adv-media-send" style="width:48px; height:48px; border-radius:50%; background:var(--primary); color:white; border:none; display:flex; justify-content:center; align-items:center; cursor:pointer;">
+                    <span class="material-icons-round">send</span>
+                </button>
+            </div>
+            <div id="adv-media-thumbnails" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:5px;"></div>
+        </div>
+    </div>
+
     <!-- Profile Settings -->
     <div id="user-settings-modal" class="modal"> 
         <div class="modal-content"> 
@@ -348,29 +375,20 @@
             </div> 
             <input type="text" id="my-display-name" class="input-field" placeholder="Display Name"> 
             <input type="text" id="my-bio" class="input-field" placeholder="About (Bio)" style="font-size: 14px;">
-            
             <div style="text-align: left; margin-top: 15px; padding: 10px; background: var(--bg-color); border-radius: 8px;">
-                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; font-size:14px;"> 
-                    <input type="checkbox" id="global-notifications" style="width: 18px; height: 18px; margin-right: 10px;" checked> Push Notifications 
-                </label> 
-                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; font-size:14px;"> 
-                    <input type="checkbox" id="setting-read-receipts" style="width: 18px; height: 18px; margin-right: 10px;" checked> Read Receipts (Blue Ticks)
-                </label> 
-                <label style="display: flex; align-items: center; cursor: pointer; font-size:14px;"> 
-                    <input type="checkbox" id="setting-show-online" style="width: 18px; height: 18px; margin-right: 10px;" checked> Show Online Status
-                </label> 
+                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; font-size:14px;"> <input type="checkbox" id="global-notifications" style="width: 18px; height: 18px; margin-right: 10px;" checked> Push Notifications </label> 
+                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; font-size:14px;"> <input type="checkbox" id="setting-read-receipts" style="width: 18px; height: 18px; margin-right: 10px;" checked> Read Receipts (Blue Ticks) </label> 
+                <label style="display: flex; align-items: center; cursor: pointer; font-size:14px;"> <input type="checkbox" id="setting-show-online" style="width: 18px; height: 18px; margin-right: 10px;" checked> Show Online Status </label> 
             </div>
-
             <button id="save-settings-btn" class="btn-primary">Save Profile</button> 
             <button onclick="closeModal('user-settings-modal')" class="modal-btn">Cancel</button> 
         </div> 
     </div>
     
-    <!-- Message Options -->
+    <!-- Message Options (Copy / Delete Handlers Fixed) -->
     <div id="msg-options-modal" class="modal"> 
         <div class="modal-content"> 
             <h3>Message Options</h3> 
-            <!-- Emoji Reactions -->
             <div id="reaction-picker" style="font-size: 24px; display:flex; justify-content:center; gap:10px; margin: 15px 0; cursor:pointer;">
                 <span onclick="addReaction('❤️')">❤️</span> <span onclick="addReaction('👍')">👍</span> <span onclick="addReaction('😂')">😂</span> <span onclick="addReaction('😮')">😮</span> <span onclick="addReaction('😢')">😢</span> <span onclick="addReaction('🙏')">🙏</span>
             </div>
@@ -400,7 +418,6 @@
 
     <!-- Group/Broadcast Modals -->
     <div id="create-group-modal" class="modal"> <div class="modal-content"> <h3 id="create-modal-title" style="margin-bottom: 15px;">Create New Group</h3> <input type="text" id="new-group-name" class="input-field" placeholder="Enter Group Subject"> <input type="text" id="new-group-desc" class="input-field" placeholder="Group Description (Optional)" style="font-size:14px;"> <div style="text-align: left; font-weight: bold; margin: 10px 0 5px 0;">Select Contacts:</div> <div id="group-contacts-list" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 15px;"></div> <button id="confirm-create-group" class="btn-primary">✔ Create</button> <button onclick="closeModal('create-group-modal')" class="modal-btn">Cancel</button> </div> </div>
-    
     <div id="group-settings-modal" class="modal"> <div class="modal-content"> <h3 style="margin-bottom: 15px;">Group Info</h3> <img id="group-settings-dp" src="https://cdn-icons-png.flaticon.com/512/615/615075.png" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;"> <div style="display:flex; justify-content:center; align-items:center; gap:10px;"> <h4 id="group-settings-name" style="margin:0;">Group Name</h4> </div> <p id="group-settings-desc" style="font-size:12px; color:var(--text-muted); margin:5px 0 15px 0;">Description</p> <button id="btn-invite-link" class="modal-btn" style="color:var(--primary); font-weight:bold;">🔗 Copy Invite ID</button> <div id="admin-controls" style="display: none; background: var(--bg-color); padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: left;"> <strong style="color: var(--primary);">⚙️ Admin Settings</strong> <label style="display: flex; align-items: center; margin-top: 10px; cursor: pointer;"> <input type="checkbox" id="admin-only-msg" style="margin-right: 10px;"> Only Admins can send messages </label> <button id="btn-delete-group" class="modal-btn danger" style="margin-top:10px;">🗑️ Delete Group</button> </div> <div style="text-align: left; font-weight: bold; margin-bottom: 5px;">Participants:</div> <div id="group-members-display" style="max-height: 150px; overflow-y: auto; text-align: left; font-size: 14px; background: var(--bg-color); padding: 10px; border-radius: 5px;"></div> <button onclick="closeModal('group-settings-modal')" class="modal-btn">Close</button> </div> </div>
 </div>
 
@@ -408,6 +425,31 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref as dbRef, push, onValue, set, get, child, update, remove, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     import { onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // --- HARDWARE BACK BUTTON / SYSTEM FREEZE FIX ---
+    history.pushState(null, null, location.href);
+    window.addEventListener('popstate', function () {
+        history.pushState(null, null, location.href); 
+        
+        let callOpen = document.getElementById('call-screen-overlay').style.display === 'flex';
+        let mediaViewer = document.getElementById('media-viewer').style.display === 'flex';
+        let advEditor = document.getElementById('advanced-media-modal').style.display === 'flex';
+        let modals = Array.from(document.querySelectorAll('.modal'));
+        let activeModal = modals.find(m => m.style.display === 'flex');
+        let chatOpen = document.getElementById('chat-screen').classList.contains('active');
+        
+        if (callOpen) {
+            // Cannot exit via back button during call
+        } else if (mediaViewer) {
+            document.getElementById("close-viewer-btn").click();
+        } else if (advEditor) {
+            window.closeAdvEditor();
+        } else if (activeModal) {
+            activeModal.style.display = 'none';
+        } else if (chatOpen) {
+            document.getElementById("back-btn").click();
+        }
+    });
 
     const firebaseConfig = {
         apiKey: "AIzaSyAM8akalu1KzcjF18-j7XkHhlzD3k_feBw",
@@ -570,7 +612,7 @@
         initStickers(); // Load Stickers
     }
 
-    // --- Media Viewer (Full Screen) ---
+    // --- Media Viewer ---
     window.openMediaViewer = (url, type, fileName) => {
         const viewerContent = document.getElementById("viewer-content");
         if(type === 'video') {
@@ -582,7 +624,6 @@
         document.getElementById("download-viewer-btn").onclick = () => {
             let downloadUrl = url;
             if(url.includes('/upload/')) { downloadUrl = url.replace('/upload/', '/upload/fl_attachment/'); }
-            
             fetch(downloadUrl).then(res => res.blob()).then(blob => {
                 const a = document.createElement("a");
                 a.href = URL.createObjectURL(blob);
@@ -590,9 +631,7 @@
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-            }).catch(e => {
-                window.open(url, '_blank');
-            });
+            }).catch(e => { window.open(url, '_blank'); });
         };
         document.getElementById("media-viewer").style.display = "flex";
     };
@@ -829,7 +868,7 @@
         }
     };
 
-    let chatClearedAt = 0; let currentBroadcastMembers = {};
+    let chatClearedAt = 0;
     window.openChat = async (id, type, dpUrl, dName) => {
         chatType = type; isGroupChat = (type === 'group'); isBroadcastList = (type === 'broadcast');
         currentRoomId = (type === '1to1') ? [currentUser, id].sort().join("_") : id;
@@ -855,7 +894,7 @@
         } 
         else { 
             onValue(dbRef(db, `Users/${id}`), (s) => { 
-                let d = s.val(); isRecipientOnline = d?.online || false; window.recipientLastSeenTime = d?.lastSeen || 0;
+                let d = s.val(); isRecipientOnline = d?.online || false;
                 document.getElementById("chat-user-display").innerText = d?.displayName || id; 
                 document.getElementById("chat-header-dp").src = d?.dp || "https://cdn-icons-png.flaticon.com/512/149/149071.png"; 
                 
@@ -873,8 +912,29 @@
     document.getElementById("back-btn").onclick = () => { showScreen("dashboard-screen"); currentRoomId = ""; };
     document.getElementById("menu-clear-chat").onclick = async () => { if(confirm("Clear this chat?")) await set(dbRef(db, `Users/${currentUser}/chatSettings/${currentRoomId}/clearedAt`), serverTimestamp()); };
 
+    // --- KEYBOARD & INPUT FIXES ---
     const msgInput = document.getElementById("msg-input");
-    msgInput.addEventListener('input', () => { document.getElementById("send-btn").style.display = msgInput.value.trim() ? "flex" : "none"; document.getElementById("record-btn").style.display = msgInput.value.trim() ? "none" : "flex"; });
+    const checkSendBtnState = () => {
+        let val = msgInput.value.trim();
+        document.getElementById("send-btn").style.display = val ? "flex" : "none";
+        document.getElementById("record-btn").style.display = val ? "none" : "flex";
+    };
+    
+    msgInput.addEventListener('input', checkSendBtnState);
+    msgInput.addEventListener('keyup', checkSendBtnState);
+    msgInput.addEventListener('change', checkSendBtnState);
+    
+    // Prevent default on Enter to stop keyboard from closing when submitting
+    msgInput.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') {
+            e.preventDefault(); 
+            if(msgInput.value.trim()) document.getElementById("send-btn").click();
+        }
+    });
+
+    // Prevent default on pointer down so focus is NOT lost and keyboard STAYS UP!
+    document.getElementById("send-btn").addEventListener("pointerdown", e => e.preventDefault());
+    document.getElementById("record-btn").addEventListener("pointerdown", e => e.preventDefault());
 
     window.handleSendMsg = async (type, payload, extraInfo = {}) => { 
         let msgObj = { sender: currentUser, senderName: myProfile.name, type: type, timestamp: serverTimestamp(), deletedForEveryone: false, read: false, ...extraInfo }; 
@@ -897,24 +957,175 @@
     };
     
     document.getElementById("send-btn").onclick = async () => { 
-        let t = document.getElementById("msg-input").value.trim(); if(!t) return; 
-        document.getElementById("msg-input").value = ""; 
-        document.getElementById("send-btn").style.display="none"; document.getElementById("record-btn").style.display="flex";
+        let t = msgInput.value.trim(); if(!t) return; 
+        msgInput.value = ""; 
+        checkSendBtnState();
         await handleSendMsg('text', t); 
+        msgInput.focus(); // Ensure focus returns immediately just in case
     };
-    msgInput.onkeypress = e => { if(e.key === 'Enter') document.getElementById("send-btn").click(); };
-    
-    // --- CHAT MEDIA CLOUDINARY UPLOAD METHOD ---
-    async function handleCloudinaryUpload(file, type, isAudioBlob = false) {
-        if(!file) return;
+
+    // --- TRUE ADVANCED MEDIA EDITOR (WhatsApp Style) ---
+    let pendingMediaFiles = [];
+    let currentMediaIndex = 0;
+    let advDrawColor = '#FF5252';
+    let isDrawingEnabled = false;
+    let isDrawing = false;
+
+    document.getElementById("file-upload-video").onchange = e => openAdvancedEditor(e, 'video');
+    document.getElementById("file-upload-image").onchange = e => openAdvancedEditor(e, 'image');
+
+    function openAdvancedEditor(e, type) {
+        if(!e.target.files.length) return;
+        pendingMediaFiles = Array.from(e.target.files).map(file => ({ 
+            file, type, caption: '', objUrl: URL.createObjectURL(file), editedUrl: null
+        }));
+        currentMediaIndex = 0;
+        e.target.value = '';
         document.getElementById("attachment-menu").style.display = "none";
+        renderAdvancedEditor();
+        document.getElementById("advanced-media-modal").style.display = "flex";
+    }
+
+    window.closeAdvEditor = () => {
+        document.getElementById("advanced-media-modal").style.display = "none";
+        pendingMediaFiles = [];
+    };
+
+    function renderAdvancedEditor() {
+        let container = document.getElementById("adv-media-preview-container");
+        let thumbs = document.getElementById("adv-media-thumbnails");
+        container.innerHTML = ''; thumbs.innerHTML = '';
+        
+        if(!pendingMediaFiles.length) { closeAdvEditor(); return; }
+        
+        let current = pendingMediaFiles[currentMediaIndex];
+        
+        // Show/Hide draw tool depending on type
+        document.getElementById("adv-draw-btn").style.display = (current.type === 'image') ? "block" : "none";
+        document.getElementById("adv-color-picker").style.display = "none";
+        isDrawingEnabled = false;
+
+        // Main preview
+        if (current.type === 'video') {
+            container.innerHTML = `<video src="${current.objUrl}" controls style="max-width:100%; max-height:100%;"></video>`;
+        } else {
+            // Setup Canvas for Image
+            let canvas = document.createElement("canvas");
+            canvas.id = "adv-canvas";
+            container.appendChild(canvas);
+            setupDrawingCanvas(current);
+        }
+
+        // Thumbnails
+        pendingMediaFiles.forEach((m, idx) => {
+            let thumb = document.createElement('div');
+            thumb.style.width = '60px'; thumb.style.height = '60px';
+            thumb.style.flexShrink = '0'; thumb.style.cursor = 'pointer';
+            thumb.style.borderRadius = '8px';
+            thumb.style.border = idx === currentMediaIndex ? '3px solid var(--primary)' : '2px solid transparent';
+            thumb.style.background = m.type === 'image' ? `url(${m.editedUrl || m.objUrl}) center/cover` : '#333';
+            thumb.style.display = 'flex'; thumb.style.justifyContent = 'center'; thumb.style.alignItems = 'center';
+            if(m.type === 'video') thumb.innerHTML = '<span class="material-icons-round" style="color:white;">videocam</span>';
+            thumb.onclick = () => { saveCurrentCanvas(); currentMediaIndex = idx; renderAdvancedEditor(); };
+            thumbs.appendChild(thumb);
+        });
+        document.getElementById("adv-media-caption").value = current.caption || "";
+    }
+
+    function setupDrawingCanvas(currentMedia) {
+        const canvas = document.getElementById("adv-canvas");
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+        
+        img.onload = () => {
+            // Calculate sizes keeping aspect ratio inside window bounds
+            let ratio = img.width / img.height;
+            let maxWidth = window.innerWidth;
+            let maxHeight = window.innerHeight - 150; 
+            
+            let width = maxWidth;
+            let height = width / ratio;
+            if(height > maxHeight) { height = maxHeight; width = height * ratio; }
+            
+            canvas.width = width; canvas.height = height;
+            
+            // If we already edited it, load the edited version, otherwise the original image
+            if (currentMedia.editedUrl) {
+                let editedImg = new Image();
+                editedImg.onload = () => ctx.drawImage(editedImg, 0, 0, width, height);
+                editedImg.src = currentMedia.editedUrl;
+            } else {
+                ctx.drawImage(img, 0, 0, width, height);
+            }
+        };
+        img.src = currentMedia.objUrl;
+
+        // Drawing events
+        canvas.onpointerdown = (e) => {
+            if(!isDrawingEnabled) return;
+            isDrawing = true;
+            let rect = canvas.getBoundingClientRect();
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        };
+        canvas.onpointermove = (e) => {
+            if(!isDrawing || !isDrawingEnabled) return;
+            let rect = canvas.getBoundingClientRect();
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.strokeStyle = advDrawColor;
+            ctx.lineWidth = 4;
+            ctx.lineCap = "round";
+            ctx.stroke();
+        };
+        canvas.onpointerup = () => isDrawing = false;
+        canvas.onpointerout = () => isDrawing = false;
+    }
+
+    function saveCurrentCanvas() {
+        let canvas = document.getElementById("adv-canvas");
+        if(canvas && pendingMediaFiles[currentMediaIndex].type === 'image') {
+            pendingMediaFiles[currentMediaIndex].editedUrl = canvas.toDataURL("image/jpeg");
+        }
+    }
+
+    document.getElementById("adv-draw-btn").onclick = () => {
+        isDrawingEnabled = !isDrawingEnabled;
+        document.getElementById("adv-draw-btn").style.color = isDrawingEnabled ? "var(--primary)" : "white";
+        document.getElementById("adv-color-picker").style.display = isDrawingEnabled ? "flex" : "none";
+    };
+
+    window.setDrawColor = (c) => { advDrawColor = c; };
+
+    document.getElementById("adv-delete-btn").onclick = () => {
+        pendingMediaFiles.splice(currentMediaIndex, 1);
+        if(currentMediaIndex >= pendingMediaFiles.length) currentMediaIndex--;
+        if(currentMediaIndex < 0) currentMediaIndex = 0;
+        renderAdvancedEditor();
+    };
+
+    document.getElementById("adv-media-caption").addEventListener('input', (e) => {
+        if (pendingMediaFiles[currentMediaIndex]) pendingMediaFiles[currentMediaIndex].caption = e.target.value;
+    });
+
+    document.getElementById("adv-media-send").onclick = async () => {
+        saveCurrentCanvas(); // Ensure last drawings are saved before sending
+        let filesToUpload = pendingMediaFiles;
+        closeAdvEditor();
+        for (let m of filesToUpload) {
+            let fileOrDataUrl = m.editedUrl || m.file; 
+            await handleCloudinaryUpload(fileOrDataUrl, m.type, false, m.caption);
+        }
+    };
+
+    async function handleCloudinaryUpload(fileOrDataUrl, type, isAudioBlob = false, caption = "") {
+        if(!fileOrDataUrl) return;
         
         let tempId = `temp_${Date.now()}`;
-        document.getElementById("chat-box").insertAdjacentHTML('beforeend', `<div class="message sent" id="${tempId}" style="color:var(--text-muted);"><span class="material-icons-round" style="font-size:16px; vertical-align:middle;">cloud_upload</span> Uploading ${type}...</div>`);
+        document.getElementById("chat-box").insertAdjacentHTML('beforeend', `<div class="message sent" id="${tempId}" style="color:var(--text-muted);"><span class="material-icons-round" style="font-size:16px; vertical-align:middle; animation:pulse 1s infinite;">sync</span> Uploading ${type}...</div>`);
         document.getElementById("chat-box").scrollTop = document.getElementById("chat-box").scrollHeight;
         
         const CLOUD_NAME = "mj6imk2l"; const UPLOAD_PRESET = "my_chat_app"; 
-        const formData = new FormData(); formData.append("file", file); formData.append("upload_preset", UPLOAD_PRESET);
+        const formData = new FormData(); formData.append("file", fileOrDataUrl); formData.append("upload_preset", UPLOAD_PRESET);
 
         let resourceType = 'raw'; 
         if (type === 'image') resourceType = 'image';
@@ -925,18 +1136,16 @@
             const data = await response.json();
             
             if(data.secure_url) {
-                let finalFileName = isAudioBlob ? `Audio_${Date.now()}.webm` : file.name;
-                await handleSendMsg(type, data.secure_url, { fileName: finalFileName, fileSize: file.size });
+                let finalFileName = isAudioBlob ? `Audio_${Date.now()}.webm` : (fileOrDataUrl.name || `Image_${Date.now()}.jpg`);
+                await handleSendMsg(type, data.secure_url, { fileName: finalFileName, caption: caption });
             } else { alert("Upload failed"); }
         } catch(err) { alert("Error uploading media."); } 
         finally { document.getElementById(tempId)?.remove(); }
     }
 
-    document.getElementById("file-upload-image").onchange = e => { handleCloudinaryUpload(e.target.files[0], 'image'); e.target.value = ''; };
-    document.getElementById("file-upload-video").onchange = e => { handleCloudinaryUpload(e.target.files[0], 'video'); e.target.value = ''; };
     document.getElementById("file-upload-doc").onchange = e => { handleCloudinaryUpload(e.target.files[0], 'document'); e.target.value = ''; };
 
-    // Voice Note Recorder 
+    // Voice Note Recorder (Audio Settings)
     let mediaRec; let audioChunks = [];
     document.getElementById("record-btn").onclick = async (e) => { 
         let btn = e.target.closest('button'); 
@@ -959,6 +1168,10 @@
         } else { 
             mediaRec.stop(); btn.classList.remove("recording"); btn.innerHTML = '<span class="material-icons-round">mic</span>'; 
         } 
+    };
+
+    window.markAudioPlayed = (roomId, msgId) => {
+        update(dbRef(db, `Chats/${roomId}/${msgId}`), { played: true });
     };
 
     function loadMessages() { 
@@ -1016,12 +1229,20 @@
                 } else { 
                     let rep = m.replyTo ? `<div style="background:rgba(0,0,0,0.05); border-left:3px solid var(--primary); padding:4px 8px; font-size:12px; margin-bottom:4px; border-radius:4px;"><strong>${m.replyTo.senderName}</strong><br>${m.replyTo.text}</div>` : '';
                     let content = "";
+                    let captionHtml = m.caption ? `<div style="margin-top:5px; font-size:14px; color:var(--text-main);">${formatRichText(m.caption)}</div>` : '';
                     
                     if(m.type === "text") content = formatRichText(m.text) + (m.edited ? '<span style="font-size:10px; font-style:italic; margin-left:5px;">(edited)</span>' : '');
-                    else if(m.type === "image") content = `<img src="${m.url}" class="msg-media" onclick="openMediaViewer('${m.url}', 'image', '${m.fileName || 'Image'}')">`;
-                    else if(m.type === "video") content = `<video src="${m.url}" class="msg-video" onclick="openMediaViewer('${m.url}', 'video', '${m.fileName || 'Video'}')"></video>`;
+                    else if(m.type === "image") content = `<img src="${m.url}" class="msg-media" onclick="openMediaViewer('${m.url}', 'image', '${m.fileName || 'Image'}')">${captionHtml}`;
+                    else if(m.type === "video") content = `<video src="${m.url}" class="msg-video" onclick="openMediaViewer('${m.url}', 'video', '${m.fileName || 'Video'}')"></video>${captionHtml}`;
                     else if(m.type === "sticker") content = `<img src="${m.url}" class="msg-sticker" onclick="openMediaViewer('${m.url}', 'image', 'Sticker')">`;
-                    else if(m.type === "audio") content = `<audio controls src="${m.url}" style="height:40px; width:220px; outline:none; border-radius: 20px;"></audio>`;
+                    else if(m.type === "audio") {
+                        let micColor = m.played ? '#34B7F1' : 'var(--text-muted)';
+                        let playTrigger = !isMe ? `onplay="markAudioPlayed('${currentRoomId}', '${childNode.key}')"` : '';
+                        content = `<div style="display:flex; align-items:center; gap:8px;">
+                                     <span class="material-icons-round" style="color:${micColor}; font-size:24px;">mic</span>
+                                     <audio controls src="${m.url}" style="height:40px; width:200px; outline:none; border-radius: 20px;" ${playTrigger}></audio>
+                                   </div>`;
+                    }
                     else if(m.type === "document") content = `<a href="${m.url}" download target="_blank" class="msg-doc"><span class="material-icons-round">insert_drive_file</span> ${m.fileName || 'Document'}</a>`;
                     
                     let rxnHtml = "";
@@ -1041,6 +1262,7 @@
         }); 
     }
 
+    // --- WORKING MESSAGE OPTIONS LOGIC (Copy/Delete) ---
     window.openMsgOptions = (id, data, isMe) => {
         selectedMsgId = id; selectedMsgData = data;
         if (data.deletedForEveryone) return;
@@ -1079,12 +1301,30 @@
         closeModal("msg-options-modal");
     };
 
+    // COPY LOGIC ADDED HERE
+    document.getElementById("btn-copy-msg").onclick = () => {
+        if(selectedMsgData && selectedMsgData.text) {
+            navigator.clipboard.writeText(selectedMsgData.text).then(() => {
+                alert("Copied to clipboard!");
+            });
+        }
+        closeModal("msg-options-modal");
+    };
+
+    // DELETE FOR ME LOGIC ADDED HERE
+    document.getElementById("btn-delete-me").onclick = async () => {
+        if(selectedMsgId) {
+            await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}/deletedFor`), { [currentUser]: true });
+        }
+        closeModal("msg-options-modal");
+    };
+
     document.getElementById("btn-delete-everyone").onclick = async () => { 
         if(selectedMsgId) await update(dbRef(db, `Chats/${currentRoomId}/${selectedMsgId}`), { deletedForEveryone: true, text: "", url: "", type: "deleted" }); 
         closeModal("msg-options-modal"); 
     };
 
-    // --- WebRTC Video Call Setup (Enhanced UI & Features) ---
+    // --- WebRTC Video Call Setup ---
     const localVidEle = document.getElementById("local-video");
     const remoteVidEle = document.getElementById("remote-video");
     let isDraggingVid = false, dragStartX, dragStartY, initialVidX, initialVidY, dragMoved = false;
@@ -1092,10 +1332,8 @@
     function updateVideoClasses() {
         let localClasses = isLocalPiP ? "video-pip " : "video-fullscreen ";
         let remoteClasses = isLocalPiP ? "video-fullscreen " : "video-pip ";
-        
         if (currentFacingMode === "user") localClasses += "mirrored ";
         if (isBeautyOn) localClasses += "beauty-filter ";
-        
         localVidEle.className = localClasses.trim();
         remoteVidEle.className = remoteClasses.trim();
     }
@@ -1121,15 +1359,12 @@
         pipEle.style.top = (initialVidY + diffY) + 'px';
     }
 
-    function endVidDrag() {
-        if(isDraggingVid) { isDraggingVid = false; getActivePiP().style.transition = '0.3s'; }
-    }
+    function endVidDrag() { if(isDraggingVid) { isDraggingVid = false; getActivePiP().style.transition = '0.3s'; } }
 
     localVidEle.addEventListener('mousedown', (e) => startVidDrag(e.clientX, e.clientY, e));
     remoteVidEle.addEventListener('mousedown', (e) => startVidDrag(e.clientX, e.clientY, e));
     document.addEventListener('mousemove', (e) => doVidDrag(e.clientX, e.clientY));
     document.addEventListener('mouseup', endVidDrag);
-
     localVidEle.addEventListener('touchstart', (e) => startVidDrag(e.touches[0].clientX, e.touches[0].clientY, e), {passive: true});
     remoteVidEle.addEventListener('touchstart', (e) => startVidDrag(e.touches[0].clientX, e.touches[0].clientY, e), {passive: true});
     document.addEventListener('touchmove', (e) => doVidDrag(e.touches[0].clientX, e.touches[0].clientY), {passive: true});
@@ -1148,11 +1383,9 @@
     localVidEle.addEventListener('click', handlePipClick);
     remoteVidEle.addEventListener('click', handlePipClick);
 
-    // Call Buttons Actions
     document.getElementById("header-call-btn").onclick = () => startCall(false); 
     document.getElementById("header-video-call-btn").onclick = () => startCall(true); 
     document.getElementById("btn-end-call").onclick = endCall;
-
     document.getElementById("btn-mute-call").onclick = () => {
         if(localStream) {
             isMuted = !isMuted; localStream.getAudioTracks()[0].enabled = !isMuted;
@@ -1161,7 +1394,6 @@
             btn.style.backgroundColor = isMuted ? "var(--danger)" : "rgba(255,255,255,0.25)";
         }
     };
-
     document.getElementById("btn-mute-video").onclick = () => {
         if(localStream && isVideoCall) {
             let vTrack = localStream.getVideoTracks()[0];
@@ -1173,7 +1405,6 @@
             }
         }
     };
-
     document.getElementById("btn-beauty-filter").onclick = () => {
         if(isVideoCall) {
             isBeautyOn = !isBeautyOn;
@@ -1184,46 +1415,23 @@
         }
     };
 
-    // --- FIX FOR CAMERA SWITCH (Permission Denied Issue) ---
     document.getElementById("btn-switch-camera").onclick = async () => {
         if (!isVideoCall || !localStream) return;
-        
         let prevMode = currentFacingMode;
         currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
-        
         try {
-            // STEP 1: MUST stop the old camera track BEFORE requesting the new one!
             const oldVideoTrack = localStream.getVideoTracks()[0];
-            if (oldVideoTrack) { 
-                oldVideoTrack.stop(); 
-                localStream.removeTrack(oldVideoTrack); 
-            }
-            
-            // STEP 2: Request the new camera track
-            const newStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: currentFacingMode } 
-            });
+            if (oldVideoTrack) { oldVideoTrack.stop(); localStream.removeTrack(oldVideoTrack); }
+            const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
             const newVideoTrack = newStream.getVideoTracks()[0];
-            
-            // STEP 3: Replace track for the person on the other end
             if(pc) {
                 const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
                 if (sender) sender.replaceTrack(newVideoTrack);
             }
-            
-            // STEP 4: Update our local video element
-            localStream.addTrack(newVideoTrack); 
-            newVideoTrack.enabled = !isVideoMuted;
-            localVidEle.srcObject = localStream; 
-            localVidEle.play().catch(e => console.error(e));
-            
+            localStream.addTrack(newVideoTrack); newVideoTrack.enabled = !isVideoMuted;
+            localVidEle.srcObject = localStream; localVidEle.play().catch(e => console.error(e));
             updateVideoClasses();
-            
-        } catch (err) { 
-            console.error(err);
-            alert("Camera switch failed. Permission denied or camera in use."); 
-            currentFacingMode = prevMode; // Revert if failed
-        }
+        } catch (err) { alert("Camera switch failed."); currentFacingMode = prevMode; }
     };
 
     function startCallTimer() {
@@ -1248,8 +1456,7 @@
     async function startCall(videoEnabled) {
         try {
             callRoomId = currentRoomId; let calleeId = currentRoomId.split("_").find(id => id !== currentUser);
-            isVideoCall = videoEnabled; currentFacingMode = "user"; callDirection = "outgoing";
-            isLocalPiP = true; isBeautyOn = false; dragMoved = false;
+            isVideoCall = videoEnabled; currentFacingMode = "user"; callDirection = "outgoing"; isLocalPiP = true; isBeautyOn = false; dragMoved = false;
             
             document.getElementById("call-user-name").innerText = document.getElementById("chat-user-display").innerText; document.getElementById("call-user-dp").src = document.getElementById("chat-header-dp").src;
             document.getElementById("call-status-text").innerText = "Calling..."; document.getElementById("btn-accept-call").style.display = "none"; document.getElementById("call-screen-overlay").style.display = "flex";
@@ -1265,10 +1472,7 @@
             }
 
             localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: isVideoCall ? { facingMode: currentFacingMode } : false }); 
-            if (isVideoCall) { 
-                localVidEle.srcObject = localStream; localVidEle.style.display = "block"; 
-                updateVideoClasses();
-            }
+            if (isVideoCall) { localVidEle.srcObject = localStream; localVidEle.style.display = "block"; updateVideoClasses(); }
             
             pc = new RTCPeerConnection(servers); localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             pc.ontrack = e => { if (e.streams && e.streams[0]) { let r = document.getElementById(isVideoCall ? "remote-video" : "remote-audio"); r.srcObject = e.streams[0]; r.style.display = isVideoCall ? "block" : "none"; } };
@@ -1298,10 +1502,7 @@
             }
 
             localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: isVideoCall ? { facingMode: currentFacingMode } : false }); 
-            if (isVideoCall) { 
-                localVidEle.srcObject = localStream; localVidEle.style.display = "block"; 
-                updateVideoClasses();
-            }
+            if (isVideoCall) { localVidEle.srcObject = localStream; localVidEle.style.display = "block"; updateVideoClasses(); }
 
             pc = new RTCPeerConnection(servers); localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             pc.ontrack = e => { if (e.streams && e.streams[0]) { let r = document.getElementById(isVideoCall ? "remote-video" : "remote-audio"); r.srcObject = e.streams[0]; r.style.display = isVideoCall ? "block" : "none"; } };
@@ -1317,7 +1518,7 @@
 
             onChildAdded(dbRef(db, `Calls/${callRoomId}/callerCandidates`), snap => { if(snap.exists() && pc.signalingState !== 'closed') pc.addIceCandidate(new RTCIceCandidate(snap.val())); });
             onValue(dbRef(db, `Calls/${callRoomId}/status`), snap => { if(snap.val() === 'ended') endCall(); });
-        } catch (err) { alert("Camera/Mic Access Denied!"); endCall(); }
+        } catch (err) { endCall(); }
     }
 
     async function endCall() {
@@ -1338,7 +1539,6 @@
         document.getElementById("btn-mute-call").style.display = "none"; document.getElementById("btn-switch-camera").style.display = "none"; document.getElementById("btn-mute-video").style.display = "none"; document.getElementById("btn-beauty-filter").style.display = "none";
         
         isLocalPiP = true; isBeautyOn = false;
-        
         if(pc) { pc.close(); pc = null; } 
         if(localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; } 
         document.getElementById("remote-audio").srcObject = null; document.getElementById("remote-video").srcObject = null; document.getElementById("remote-video").style.display = "none"; 
