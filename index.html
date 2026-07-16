@@ -89,7 +89,11 @@
         /* Chat Screen */
         #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: var(--chat-bg); background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; overflow-x: hidden; }
         
-        .message { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 15px; position: relative; word-wrap: break-word; box-shadow: 0 1px 1px var(--shadow); cursor: pointer; user-select: none; color: var(--text-main); border: 2px solid transparent; transition: background-color 0.2s, border 0.2s; }
+        /* Message selection & anti-default styling */
+        .message { 
+            max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 15px; position: relative; word-wrap: break-word; box-shadow: 0 1px 1px var(--shadow); cursor: pointer; color: var(--text-main); border: 2px solid transparent; transition: background-color 0.2s, border 0.2s;
+            -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-touch-callout: none;
+        }
         .message.sent { background: var(--msg-sent); align-self: flex-end; border-top-right-radius: 0; }
         .message.received { background: var(--msg-received); align-self: flex-start; border-top-left-radius: 0; }
         .message.selected-msg { background: var(--select-bg) !important; border: 2px solid rgba(52, 183, 241, 0.8) !important; box-shadow: 0 0 10px rgba(52, 183, 241, 0.5); }
@@ -98,10 +102,11 @@
         .deleted-msg { font-style: italic; color: var(--text-muted); }
         
         /* Media & Attachments */
-        .msg-media { max-width: 100%; max-height: 250px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; object-fit: contain; }
-        .msg-video { max-width: 100%; max-height: 250px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; }
-        .msg-sticker { width: 120px; height: 120px; object-fit: contain; cursor: pointer; background: transparent; margin-bottom: 5px; }
-        .msg-doc { display: flex; align-items: center; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; text-decoration: none; color: var(--text-main); gap: 10px; }
+        .msg-media { max-width: 100%; max-height: 250px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; object-fit: contain; pointer-events: auto; }
+        .msg-video { max-width: 100%; max-height: 250px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; pointer-events: auto; }
+        .msg-sticker { width: 120px; height: 120px; object-fit: contain; cursor: pointer; background: transparent; margin-bottom: 5px; pointer-events: auto; }
+        .msg-doc { display: flex; align-items: center; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; text-decoration: none; color: var(--text-main); gap: 10px; pointer-events: auto; }
+        audio { pointer-events: auto; } /* Ensures play button works without selecting message */
         
         /* Reactions */
         .msg-reactions { position: absolute; bottom: -12px; right: 10px; background: var(--app-bg); border-radius: 12px; padding: 2px 6px; font-size: 12px; box-shadow: 0 1px 3px var(--shadow); display: flex; gap: 2px; }
@@ -1063,7 +1068,7 @@
         } else {
             let canvas = document.createElement("canvas");
             canvas.id = "adv-canvas";
-            canvas.style.touchAction = "none"; // Fixes continuous draw on mobile
+            canvas.style.touchAction = "none"; 
             container.appendChild(canvas);
             setupDrawingCanvas(current);
         }
@@ -1109,7 +1114,6 @@
         };
         img.src = currentMedia.objUrl;
 
-        // Continuous Path Drawing Logic
         canvas.onpointerdown = (e) => {
             if(!isDrawingEnabled) return;
             isDrawing = true;
@@ -1310,15 +1314,6 @@
                 }, 500);
 
                 div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', () => clearTimeout(pressTimer)); div.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-                div.oncontextmenu = (e) => { 
-                    e.preventDefault(); 
-                    if (!isSelectionMode && !m.deletedForEveryone) { 
-                        isSelectionMode = true;
-                        document.getElementById('normal-chat-header').style.display = 'none';
-                        document.getElementById('selection-chat-header').style.display = 'flex';
-                        toggleSelection(childNode.key, div, m, isMe);
-                    }
-                };
                 
                 let startX = 0, startY = 0;
                 div.addEventListener('touchstart', e => { startPress(); startX = e.touches[0].clientX; startY = e.touches[0].clientY; div.style.transition = 'none'; }, {passive: true});
@@ -1342,9 +1337,14 @@
                     if (isSelectionMode && !m.deletedForEveryone) {
                         e.preventDefault(); e.stopPropagation();
                         toggleSelection(childNode.key, div, m, isMe);
+                    } else if (!isSelectionMode && !m.deletedForEveryone) {
+                        let target = e.target.closest('.msg-media, .msg-video, .msg-sticker');
+                        if(target) {
+                            openMediaViewer(target.dataset.url, target.dataset.type, target.dataset.name);
+                        }
                     }
                 };
-                
+
                 let tick = isMe && chatType === '1to1' ? (m.read && myProfile.readReceipts ? '<span style="color:#34B7F1;">✓✓</span>' : '<span>✓</span>') : '';
                 
                 if (m.deletedForEveryone) { 
@@ -1355,12 +1355,10 @@
                     let content = "";
                     let captionHtml = m.caption ? `<div style="margin-top:5px; font-size:14px; color:var(--text-main);">${formatRichText(m.caption)}</div>` : '';
                     
-                    let mediaClick = `onclick="if(!isSelectionMode) openMediaViewer(this.dataset.url, this.dataset.type, this.dataset.name)"`;
-
                     if(m.type === "text") content = formatRichText(m.text) + (m.edited ? '<span style="font-size:10px; font-style:italic; margin-left:5px;">(edited)</span>' : '');
-                    else if(m.type === "image") content = `<img src="${m.url}" data-url="${m.url}" data-type="image" data-name="${m.fileName||'Image'}" class="msg-media" ${mediaClick}>${captionHtml}`;
-                    else if(m.type === "video") content = `<video src="${m.url}" data-url="${m.url}" data-type="video" data-name="${m.fileName||'Video'}" class="msg-video" ${mediaClick}></video>${captionHtml}`;
-                    else if(m.type === "sticker") content = `<img src="${m.url}" data-url="${m.url}" data-type="image" data-name="Sticker" class="msg-sticker" ${mediaClick}>`;
+                    else if(m.type === "image") content = `<img src="${m.url}" data-url="${m.url}" data-type="image" data-name="${m.fileName||'Image'}" class="msg-media">${captionHtml}`;
+                    else if(m.type === "video") content = `<video src="${m.url}" data-url="${m.url}" data-type="video" data-name="${m.fileName||'Video'}" class="msg-video"></video>${captionHtml}`;
+                    else if(m.type === "sticker") content = `<img src="${m.url}" data-url="${m.url}" data-type="image" data-name="Sticker" class="msg-sticker">`;
                     else if(m.type === "audio") {
                         let micColor = m.played ? '#34B7F1' : 'var(--text-muted)';
                         let playTrigger = !isMe ? `onplay="markAudioPlayed('${currentRoomId}', '${childNode.key}')"` : '';
@@ -1381,6 +1379,13 @@
                     
                     div.innerHTML = `${isGroupChat && !isMe ? `<strong style="font-size:12px;color:var(--primary);">${m.senderName}</strong><br>` : ""}${rep}${content} ${displayTime} ${rxnHtml}`; 
                 } 
+
+                let audioEl = div.querySelector('audio');
+                if(audioEl) {
+                    audioEl.onclick = (e) => e.stopPropagation();
+                    audioEl.onpointerdown = (e) => e.stopPropagation();
+                }
+
                 box.appendChild(div); 
             }); 
             box.scrollTop = box.scrollHeight; 
@@ -1399,7 +1404,10 @@
 
     document.getElementById("selection-copy-btn").onclick = () => {
         let texts = [];
-        selectedMsgDataMap.forEach(val => { if (val.data.type === 'text') texts.push(val.data.text); });
+        selectedMsgDataMap.forEach(val => { 
+            if (val.data.type === 'text') texts.push(val.data.text); 
+            else if (val.data.caption) texts.push(val.data.caption);
+        });
         if(texts.length > 0) {
             navigator.clipboard.writeText(texts.join("\n")).then(() => alert("Messages Copied!"));
         }
@@ -1679,7 +1687,8 @@
 
     async function startCall(videoEnabled) {
         try {
-            callRoomId = currentRoomId; let calleeId = currentRoomId.split("_").find(id => id !== currentUser);
+            callRoomId = currentRoomId + "_" + Date.now(); // UNIQUE CALL ID
+            let calleeId = currentRoomId.split("_").find(id => id !== currentUser);
             isVideoCall = videoEnabled; currentFacingMode = "user"; callDirection = "outgoing"; isLocalPiP = true; isBeautyOn = false; dragMoved = false;
             
             document.getElementById("call-user-name").innerText = document.getElementById("chat-user-display").innerText; document.getElementById("call-user-dp").src = document.getElementById("chat-header-dp").src;
@@ -1797,6 +1806,7 @@
         document.getElementById("btn-mute-call").style.display = "none"; document.getElementById("btn-switch-camera").style.display = "none"; document.getElementById("btn-mute-video").style.display = "none"; document.getElementById("btn-beauty-filter").style.display = "none";
         
         isLocalPiP = true; isBeautyOn = false;
+        
         if(pc) { pc.close(); pc = null; } 
         if(localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; } 
         document.getElementById("remote-audio").srcObject = null; document.getElementById("remote-video").srcObject = null; document.getElementById("remote-video").style.display = "none"; 
