@@ -277,7 +277,7 @@
                     <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" id="chat-header-dp" class="item-dp" style="width:40px;height:40px;margin-right:10px;">
                     <div style="overflow: hidden;">
                         <h3 id="chat-user-display" style="font-size:16px; margin:0; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">Name</h3>
-                        <span id="chat-status-display" style="font-size: 12px; font-weight: normal; color: rgba(255,255,255,0.8); display:block; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">loading...</span>
+                        <span id="chat-status-display" style="font-size: 13px; font-weight: normal; color: rgba(255,255,255,0.8); display:block; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; transition: color 0.3s;">loading...</span>
                     </div>
                 </div>
 
@@ -510,7 +510,13 @@
     let currentUser = ""; let myProfile = { dp: "", name: "", bio: "Hey there! I am using YouTube.", globalNotif: true, readReceipts: true, showOnline: true };
     let currentRoomId = ""; let isGroupChat = false; let isBroadcastList = false; let chatType = "1to1"; 
     let loginTime = Date.now(); let notifiedMsgs = new Set(); let myChatMutes = {}; let myChatSettings = {}; 
-    let isRecipientOnline = false;
+    
+    // Status & Typing Indicators
+    let currentRecipientStatus = "loading...";
+    let currentTypingAction = "";
+    let activeTypingListener = null;
+    let typingTimeout = null;
+    let currentGroupMembers = {};
 
     // Multi-Selection State
     let isSelectionMode = false;
@@ -526,6 +532,7 @@
     let callTimerInterval = null; let callSeconds = 0; let callUnsubscribers = [];
     let isVideoCall = false; let currentFacingMode = "user"; let callDirection = "";
     let isLocalPiP = true; let isBeautyOn = false; 
+    let callerCandidateQueue = []; // FIX for WebRTC Connection issues
     const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
     const ringtone = document.getElementById("ringtone-audio");
@@ -665,6 +672,32 @@
         initStickers(); 
     }
 
+    // --- Typing Indicators Update Logic ---
+    function updateChatStatusUI() {
+        let statusEl = document.getElementById("chat-status-display");
+        if(isGroupChat && !currentTypingAction) {
+             let members = Object.keys(currentGroupMembers || {}).join(", ");
+             statusEl.innerText = members;
+             statusEl.style.color = "rgba(255,255,255,0.8)";
+             statusEl.style.fontStyle = "normal";
+        } else if (currentTypingAction) {
+             statusEl.innerText = currentTypingAction;
+             statusEl.style.color = "#34C759"; 
+             statusEl.style.fontStyle = "italic";
+        } else {
+             statusEl.innerText = currentRecipientStatus;
+             statusEl.style.color = "rgba(255,255,255,0.8)";
+             statusEl.style.fontStyle = "normal";
+        }
+    }
+
+    function sendTypingStatus(type) {
+        if (currentRoomId) {
+            update(dbRef(db, `Chats/${currentRoomId}/typing`), { [currentUser]: type });
+        }
+    }
+
+    // --- Media Viewer ---
     window.openMediaViewer = (url, type, fileName) => {
         if(isSelectionMode) return;
         const viewerContent = document.getElementById("viewer-content");
@@ -943,27 +976,54 @@
         
         onValue(dbRef(db, `Users/${currentUser}/chatSettings/${currentRoomId}/clearedAt`), snap => { chatClearedAt = snap.exists() ? snap.val() : 0; loadMessages(); });
 
+        if (activeTypingListener) { activeTypingListener(); activeTypingListener = null; }
+        
+        // Typing Listener
+        activeTypingListener = onValue(dbRef(db, `Chats/${currentRoomId}/typing`), snap => {
+            let typingUsers = [];
+            let recordingUsers = [];
+            if (snap.exists()) {
+                let data = snap.val();
+                for(let u in data) {
+                    if (u !== currentUser && data[u]) {
+                        if (data[u] === 'text') typingUsers.push(u);
+                        if (data[u] === 'audio') recordingUsers.push(u);
+                    }
+                }
+            }
+            if (recordingUsers.length > 0) {
+                currentTypingAction = isGroupChat ? `${recordingUsers.join(', ')} recording audio...` : "recording audio...";
+            } else if (typingUsers.length > 0) {
+                currentTypingAction = isGroupChat ? `${typingUsers.join(', ')} typing...` : "typing...";
+            } else {
+                currentTypingAction = "";
+            }
+            updateChatStatusUI();
+        });
+
         if(type === 'group') { 
             onValue(dbRef(db, `Groups/${id}`), (s) => { 
                 if(!s.exists()) return; let g = s.val(); 
+                currentGroupMembers = g.members;
                 document.getElementById("chat-user-display").innerText = g.name; 
                 document.getElementById("chat-header-dp").src = "https://cdn-icons-png.flaticon.com/512/615/615075.png"; 
-                document.getElementById("chat-status-display").innerText = Object.keys(g.members).join(", "); 
+                updateChatStatusUI();
                 if(g.settings?.onlyAdminMsg && g.admin !== currentUser) { document.getElementById("input-area").style.display = "none"; document.getElementById("restricted-area").style.display = "block"; } 
             }); 
         } 
         else { 
             onValue(dbRef(db, `Users/${id}`), (s) => { 
-                let d = s.val(); isRecipientOnline = d?.online || false;
+                let d = s.val();
                 document.getElementById("chat-user-display").innerText = d?.displayName || id; 
                 document.getElementById("chat-header-dp").src = d?.dp || "https://cdn-icons-png.flaticon.com/512/149/149071.png"; 
                 
                 let showStatus = d?.showOnline !== false;
                 if(showStatus) {
-                    document.getElementById("chat-status-display").innerText = d?.online ? "Online" : (d?.lastSeen ? "Last seen " + formatTime12H(d.lastSeen) : "Offline"); 
+                    currentRecipientStatus = d?.online ? "Online" : (d?.lastSeen ? "Last seen " + formatTime12H(d.lastSeen) : "Offline"); 
                 } else {
-                    document.getElementById("chat-status-display").innerText = "";
+                    currentRecipientStatus = "";
                 }
+                updateChatStatusUI();
             }); 
         }
         showScreen("chat-screen");
@@ -980,9 +1040,12 @@
         document.getElementById("record-btn").style.display = val ? "none" : "flex";
     };
     
-    msgInput.addEventListener('input', checkSendBtnState);
-    msgInput.addEventListener('keyup', checkSendBtnState);
-    msgInput.addEventListener('change', checkSendBtnState);
+    msgInput.addEventListener('input', () => {
+        checkSendBtnState();
+        sendTypingStatus('text');
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => sendTypingStatus(null), 2000);
+    });
     
     msgInput.addEventListener('keydown', (e) => {
         if(e.key === 'Enter') {
@@ -1018,6 +1081,7 @@
         let t = msgInput.value.trim(); if(!t) return; 
         msgInput.value = ""; 
         checkSendBtnState();
+        sendTypingStatus(null);
         await handleSendMsg('text', t); 
         msgInput.focus();
     };
@@ -1203,7 +1267,8 @@
     document.getElementById("file-upload-doc").onchange = e => { handleCloudinaryUpload(e.target.files[0], 'document'); e.target.value = ''; };
 
     let mediaRec; let audioChunks = [];
-    document.getElementById("record-btn").onclick = async (e) => { 
+    document.getElementById("record-btn").onpointerdown = async (e) => { 
+        e.preventDefault();
         let btn = e.target.closest('button'); 
         if(!mediaRec || mediaRec.state === "inactive") { 
             try { 
@@ -1214,12 +1279,14 @@
                 
                 mediaRec.onstop = () => { 
                     stream.getTracks().forEach(t => t.stop()); 
+                    sendTypingStatus(null);
                     if(audioChunks.length === 0) return; 
                     let mimeType = mediaRec.mimeType || (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4');
                     let blob = new Blob(audioChunks, { type: mimeType }); 
                     handleCloudinaryUpload(blob, 'audio', true);
                 }; 
                 mediaRec.start(250); btn.classList.add("recording"); btn.innerHTML = '<span class="material-icons-round">stop</span>'; 
+                sendTypingStatus('audio');
             } catch (err) { alert("Mic Permission Required!"); } 
         } else { 
             mediaRec.stop(); btn.classList.remove("recording"); btn.innerHTML = '<span class="material-icons-round">mic</span>'; 
@@ -1578,7 +1645,6 @@
     // MAGIC AUDIO-TO-VIDEO SWAP
     document.getElementById("btn-mute-video").onclick = async () => {
         if(localStream && isVideoCall) {
-            // Already Video Call -> Standard Mute
             let vTrack = localStream.getVideoTracks()[0];
             if(vTrack) {
                 isVideoMuted = !isVideoMuted; vTrack.enabled = !isVideoMuted;
@@ -1587,7 +1653,6 @@
                 btn.style.backgroundColor = isVideoMuted ? "var(--danger)" : "rgba(255,255,255,0.25)";
             }
         } else if (localStream && !isVideoCall) {
-            // Upgrade Audio to Video Call
             try {
                 let vStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
                 let vTrack = vStream.getVideoTracks()[0];
@@ -1607,7 +1672,6 @@
                 
                 updateVideoClasses();
 
-                // Start Renegotiation manually
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
                 await update(dbRef(db, `Calls/${callRoomId}`), { 
@@ -1666,7 +1730,6 @@
         });
     }
 
-    // Call Renegotiation Listeners
     function setupRenegotiationListeners() {
         onValue(dbRef(db, `Calls/${callRoomId}/renegotiationOffer`), async snap => {
             if(snap.exists() && pc && pc.signalingState !== 'closed') {
@@ -1687,10 +1750,11 @@
 
     async function startCall(videoEnabled) {
         try {
-            callRoomId = currentRoomId + "_" + Date.now(); // UNIQUE CALL ID
+            callRoomId = currentRoomId + "_" + Date.now(); 
             let calleeId = currentRoomId.split("_").find(id => id !== currentUser);
             isVideoCall = videoEnabled; currentFacingMode = "user"; callDirection = "outgoing"; isLocalPiP = true; isBeautyOn = false; dragMoved = false;
-            
+            callerCandidateQueue = [];
+
             document.getElementById("call-user-name").innerText = document.getElementById("chat-user-display").innerText; document.getElementById("call-user-dp").src = document.getElementById("chat-header-dp").src;
             document.getElementById("call-status-text").innerText = "Calling..."; document.getElementById("btn-accept-call").style.display = "none"; document.getElementById("call-screen-overlay").style.display = "flex";
 
@@ -1732,8 +1796,28 @@
 
             setupRenegotiationListeners();
 
-            onValue(dbRef(db, `Calls/${callRoomId}/answer`), async snap => { if(snap.exists() && pc.signalingState !== 'closed') { if (!pc.currentRemoteDescription) { await pc.setRemoteDescription(new RTCSessionDescription(snap.val())); if(!callTimerInterval) startCallTimer(); } } });
-            onChildAdded(dbRef(db, `Calls/${callRoomId}/calleeCandidates`), snap => { if(snap.exists() && pc.signalingState !== 'closed') pc.addIceCandidate(new RTCIceCandidate(snap.val())); });
+            onValue(dbRef(db, `Calls/${callRoomId}/answer`), async snap => { 
+                if(snap.exists() && pc && pc.signalingState !== 'closed') { 
+                    if (!pc.currentRemoteDescription) { 
+                        await pc.setRemoteDescription(new RTCSessionDescription(snap.val())); 
+                        if(!callTimerInterval) startCallTimer(); 
+                        callerCandidateQueue.forEach(c => pc.addIceCandidate(c).catch(console.error));
+                        callerCandidateQueue = [];
+                    } 
+                } 
+            });
+            
+            onChildAdded(dbRef(db, `Calls/${callRoomId}/calleeCandidates`), snap => { 
+                if(snap.exists() && pc && pc.signalingState !== 'closed') {
+                    let candidate = new RTCIceCandidate(snap.val());
+                    if (pc.remoteDescription) {
+                        pc.addIceCandidate(candidate).catch(console.error);
+                    } else {
+                        callerCandidateQueue.push(candidate);
+                    }
+                }
+            });
+            
             onValue(dbRef(db, `Calls/${callRoomId}/status`), snap => { if(snap.val() === 'connected' && isVideoCall) document.getElementById("call-ui-elements").style.display = "none"; if(snap.val() === 'ended') endCall(); });
         } catch (err) { resetCallUI(); }
     }
@@ -1783,7 +1867,11 @@
 
             setupRenegotiationListeners();
 
-            onChildAdded(dbRef(db, `Calls/${callRoomId}/callerCandidates`), snap => { if(snap.exists() && pc.signalingState !== 'closed') pc.addIceCandidate(new RTCIceCandidate(snap.val())); });
+            onChildAdded(dbRef(db, `Calls/${callRoomId}/callerCandidates`), snap => { 
+                if(snap.exists() && pc && pc.signalingState !== 'closed') {
+                    pc.addIceCandidate(new RTCIceCandidate(snap.val())).catch(console.error);
+                }
+            });
             onValue(dbRef(db, `Calls/${callRoomId}/status`), snap => { if(snap.val() === 'ended') endCall(); });
         } catch (err) { endCall(); }
     }
